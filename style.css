@@ -54,8 +54,8 @@ button { font: inherit; cursor: pointer; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
 .chips span { font-size: 12px; border-radius: 20px; background: color-mix(in srgb, var(--pink) 18%, white); color: #aa4c72; padding: 6px 9px; }
 .chips .ingredient-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 4px 2px 9px; }
-.ingredient-delete { width: 21px; height: 21px; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--gray) 12%, white); color: var(--gray); opacity: .62; font-size: 16px; line-height: 1; }
-.ingredient-delete:hover, .ingredient-delete:focus-visible { opacity: 1; background: color-mix(in srgb, var(--pink) 22%, white); color: #aa4c72; }
+.ingredient-delete { width: 21px; height: 21px; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--pink) 12%, white); color: #aa4c72; opacity: .72; font-size: 16px; line-height: 1; }
+.ingredient-delete:hover, .ingredient-delete:focus-visible { opacity: 1; background: color-mix(in srgb, var(--pink) 22%, white); color: #8f3f60; }
 .inline-form { display: flex; gap: 8px; }
 .inline-form input, .manual-form input, .manual-form select { min-width: 0; flex: 1; }
 .inline-form input, input, select { font: inherit; }
