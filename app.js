@@ -63,7 +63,7 @@
     if(typeof module!=='undefined')module.exports={DEFAULT_CATEGORIES,CSV_COLUMNS,parseCSV,validateCSV,recipeSignature,reconcileRecipes,mergeListItem,displayQty,norm,qtyNum};
     return;
   }
-  const view=$('#view'), toast=$('#toast'); let db, state={recipes:[],categories:[],pdfs:[],list:[]}, tab='list', modalOpen=false, workflow=null, activePdfId=null, activePdfName='', monthCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1), days=new Map(), selectedCounts={}, pdfUrl=null;
+  const view=$('#view'), toast=$('#toast'); let db, state={recipes:[],categories:[],pdfs:[],list:[]}, tab='list', modalOpen=false, workflow=null, monthCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1), days=new Map(), selectedCounts={};
   const dbReq=(req)=>new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
   function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('courses-local-v1',1);req.onupgradeneeded=()=>{const d=req.result;for(const n of ['recipes','categories','pdfs','list'])if(!d.objectStoreNames.contains(n))d.createObjectStore(n,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
   async function all(store){return dbReq(db.transaction(store,'readonly').objectStore(store).getAll());}
@@ -76,9 +76,9 @@
   function button(action,text,cls=''){return `<button class="button ${cls}" data-action="${action}">${text}</button>`;}
   function categoryName(id){return state.categories.find(c=>c.id===id)?.name||id||'Sans catégorie';}
   function renderImport(){page('Importer','RECETTES · CSV',`<section class="group"><p class="hint">CSV UTF‑8 avec en-tête exact : recette,moment,ingredient,quantite,unite,categorie,ordre. Virgule ou point-virgule accepté. L’import est validé en entier avant toute modification.</p><label class="file-pick">Choisir un fichier CSV<input type="file" id="csv-file" accept=".csv,text/csv"></label></section><section class="group"><h2>Mes recettes <span class="muted">${state.recipes.length}</span></h2>${state.recipes.length?state.recipes.map(r=>`<details class="recipe-entry"><summary><b>${esc(r.name)}</b><small>${(r.moments||[]).map(esc).join(' · ')} · ${r.ingredients.length} ingrédients</small><button class="text-button" data-action="delete-recipe" data-id="${esc(r.id)}" aria-label="Supprimer">Supprimer</button></summary><div>${r.ingredients.map(i=>`<p>${esc(i.name)} <span class="muted">${esc([i.quantity,i.unit,categoryName(i.category)].filter(Boolean).join(' · '))}</span></p>`).join('')}</div></details>`).join(''):'<p class="muted">Aucune recette importée.</p>'}</section><section class="group">${button('export-csv','Exporter les recettes','secondary')}</section>`);}
-  function renderCategories(){page('Catégories','ORGANISATION',`<section class="group category-list">${state.categories.map((c,i)=>`<article class="category-card" data-category-id="${esc(c.id)}"><div class="cat-head"><b><span class="drag-grip" aria-hidden="true">⠿</span>${esc(c.name)}</b><div><button data-action="move-cat" data-id="${esc(c.id)}" data-dir="-1" aria-label="Monter" ${i===0?'disabled':''}>↑</button><button data-action="move-cat" data-id="${esc(c.id)}" data-dir="1" aria-label="Descendre" ${i===state.categories.length-1?'disabled':''}>↓</button><button class="text-button" data-action="delete-cat" data-id="${esc(c.id)}">Supprimer</button></div></div><small>Catalogue · ${c.ingredients.length}</small><div class="chips">${c.ingredients.map(x=>`<span>${esc(x)}</span>`).join('')||'<span class="muted">Aucun ingrédient</span>'}</div><form class="inline-form" data-form="catalog" data-id="${esc(c.id)}"><input name="name" placeholder="Ajouter un ingrédient" required><button>＋</button></form></article>`).join('')}</section><p class="hint reorder-hint">Maintenez une catégorie environ une demi-seconde, puis faites-la glisser pour la déplacer.</p><form class="group inline-form" data-form="new-cat"><input name="name" placeholder="Nouvelle catégorie" required><button class="button">Ajouter</button></form>`);}
+  function renderCategories(){page('Catégories','ORGANISATION',`<section class="group category-list">${state.categories.map((c,i)=>`<article class="category-card" data-category-id="${esc(c.id)}"><div class="cat-head"><b><span class="drag-grip" aria-hidden="true">⠿</span>${esc(c.name)}</b><div><button class="text-button" data-action="delete-cat" data-id="${esc(c.id)}">Supprimer</button></div></div><small>Catalogue · ${c.ingredients.length}</small><div class="chips">${c.ingredients.map(x=>`<span>${esc(x)}</span>`).join('')||'<span class="muted">Aucun ingrédient</span>'}</div><form class="inline-form" data-form="catalog" data-id="${esc(c.id)}"><input name="name" placeholder="Ajouter un ingrédient" required><button>＋</button></form></article>`).join('')}</section><p class="hint reorder-hint">Maintenez une catégorie environ une demi-seconde, puis faites-la glisser pour la déplacer.</p><form class="group inline-form" data-form="new-cat"><input name="name" placeholder="Nouvelle catégorie" required><button class="button">Ajouter</button></form>`);}
   function pdfDisplayName(name){return String(name||'').replace(/\.pdf$/i,'');}
-  function renderPdfs(){page('Fiches','DOCUMENTS · STOCKAGE LOCAL',`<section class="group"><label class="file-pick">Importer un ou plusieurs PDF<input id="pdf-file" type="file" accept="application/pdf,.pdf" multiple></label><p class="hint">Les fichiers sont stockés localement dans IndexedDB.</p></section><section class="pdf-list">${state.pdfs.length?state.pdfs.map(f=>`<article class="pdf-card" data-pdf-row="${esc(f.id)}" data-action="open-pdf" data-id="${esc(f.id)}" role="button" tabindex="0" aria-label="Ouvrir ${esc(pdfDisplayName(f.name))}"><span class="pdf-name">${esc(pdfDisplayName(f.name))}</span><button class="pdf-icon-button" data-action="rename-pdf" data-id="${esc(f.id)}" aria-label="Renommer ${esc(pdfDisplayName(f.name))}" title="Renommer">✎</button><button class="pdf-icon-button pdf-cross" data-action="delete-pdf" data-id="${esc(f.id)}" aria-label="Supprimer ${esc(pdfDisplayName(f.name))}" title="Supprimer">✕</button></article>`).join(''):'<section class="group empty-state"><b>Aucune fiche PDF</b><p>Importez vos documents pour les retrouver ici.</p></section>'}</section>${pdfUrl?`<section class="pdf-overlay" role="dialog" aria-modal="true" aria-label="Aperçu PDF"><header class="pdf-overlay-bar"><button class="pdf-close" data-action="close-pdf">Fermer</button><strong>${esc(activePdfName||'Fiche PDF')}</strong><button class="pdf-new-view" data-action="new-pdf-view">Ouvrir dans une autre vue</button></header><div class="pdf-frame-scroll"><iframe title="Aperçu de la fiche PDF" src="${esc(pdfUrl)}"></iframe></div></section>`:''}`);}
+  function renderPdfs(){page('Fiches','DOCUMENTS · STOCKAGE LOCAL',`<section class="group"><label class="file-pick">Importer un ou plusieurs PDF<input id="pdf-file" type="file" accept="application/pdf,.pdf" multiple></label><p class="hint">Les fichiers sont stockés localement dans IndexedDB.</p></section><section class="pdf-list">${state.pdfs.length?state.pdfs.map(f=>`<article class="pdf-card" data-pdf-row="${esc(f.id)}" data-action="open-pdf" data-id="${esc(f.id)}" role="button" tabindex="0" aria-label="Ouvrir ${esc(pdfDisplayName(f.name))}"><span class="pdf-name">${esc(pdfDisplayName(f.name))}</span><button class="pdf-icon-button" data-action="rename-pdf" data-id="${esc(f.id)}" aria-label="Renommer ${esc(pdfDisplayName(f.name))}" title="Renommer">✎</button><button class="pdf-icon-button pdf-cross" data-action="delete-pdf" data-id="${esc(f.id)}" aria-label="Supprimer ${esc(pdfDisplayName(f.name))}" title="Supprimer">✕</button></article>`).join(''):'<section class="group empty-state"><b>Aucune fiche PDF</b><p>Importez vos documents pour les retrouver ici.</p></section>'}</section>`);}
   function groupedList(){const map=new Map();state.list.forEach(x=>{const k=norm(x.name);if(!map.has(k))map.set(k,[]);map.get(k).push(x);});return map;}
   function renderList(){const grouped=groupedList();let body='';state.categories.forEach(cat=>{const items=state.list.filter(i=>i.category===cat.id);if(!items.length)return;body+=`<section class="list-group"><h2>${esc(cat.name)}</h2>${items.map(i=>`<div class="shopping-row ${i.checked?'checked':''}"><input type="checkbox" data-action="toggle" data-id="${esc(i.id)}" ${i.checked?'checked':''} aria-label="Cocher ${esc(i.name)}"><span>${esc(i.name)}</span><small>${esc(displayQty(i))}</small></div>`).join('')}</section>`;});
     const uncategorized=state.list.filter(i=>!state.categories.some(c=>c.id===i.category));if(uncategorized.length)body+=`<section class="list-group"><h2>Autres</h2>${uncategorized.map(i=>`<div class="shopping-row ${i.checked?'checked':''}"><input type="checkbox" data-action="toggle" data-id="${esc(i.id)}"><span>${esc(i.name)}</span><small>${esc(displayQty(i))}</small></div>`).join('')}</section>`;
@@ -103,6 +103,7 @@
 
   document.addEventListener('keydown',e=>{const card=e.target.closest('.pdf-card[role=button]');if(card&&e.target===card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();card.click();}});
   let suppressPdfClick=false;
+  const pdfObjectUrls=new Set();
   document.addEventListener('click',async e=>{if(suppressPdfClick&&e.target.closest('.pdf-card[data-pdf-row]')){e.preventDefault();e.stopImmediatePropagation();suppressPdfClick=false;return;}const tabButton=e.target.closest('[data-tab]');if(tabButton){setTab(tabButton.dataset.tab);return;}const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action,id=b.dataset.id;
     if(a==='home'){showHome();return;} if(a==='home-close'){hideHome();return;}
     if(a==='home-generate'){hideHome();showGeneratorChoice();return;} if(a==='home-open'){hideHome();setTab(tab);return;}
@@ -114,7 +115,6 @@
     if(a==='tab'){setTab(b.dataset.tab);return;}
     if(a==='export-csv'){const lines=[CSV_COLUMNS.join(',')];state.recipes.forEach(r=>r.ingredients.forEach((i,n)=>{const row=[r.name,(r.moments||[]).join('|'),i.name,i.quantity,i.unit,categoryName(i.category),n+1];lines.push(row.map(x=>`"${String(x??'').replace(/"/g,'""')}"`).join(','));}));const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='courses-recettes.csv';link.click();URL.revokeObjectURL(url);return;}
     if(a==='delete-recipe'){if(confirm('Supprimer cette recette ?')){state.recipes=state.recipes.filter(r=>r.id!==id);await del('recipes',id);renderImport();}return;}
-    if(a==='move-cat'){const i=state.categories.findIndex(c=>c.id===id),j=i+Number(b.dataset.dir);if(j>=0&&j<state.categories.length){[state.categories[i],state.categories[j]]=[state.categories[j],state.categories[i]];state.categories.forEach((c,n)=>c.order=n);await replaceStore('categories',state.categories);renderCategories();}return;}
     if(a==='delete-cat'){if(confirm('Supprimer cette catégorie ?')){state.categories=state.categories.filter(c=>c.id!==id);state.categories.forEach((c,i)=>c.order=i);await replaceStore('categories',state.categories);renderCategories();}return;}
     if(a==='toggle'){const item=state.list.find(x=>x.id===id);if(item){item.checked=b.checked;await put('list',item);renderList();}return;}
     if(a==='add-manual'){const f=$('#manual-form');f.hidden=!f.hidden;return;}
@@ -128,44 +128,74 @@
     if(a==='count'){const n=Math.max(0,(selectedCounts[b.dataset.key]||0)+Number(b.dataset.delta));if(n)selectedCounts[b.dataset.key]=n;else delete selectedCounts[b.dataset.key];renderRecipePicker();return;}
     if(a==='recipe-ok'){const entries=[];Object.entries(selectedCounts).forEach(([key,n])=>{const r=state.recipes.find(x=>x.id===key.split(':').slice(1).join(':'));r?.ingredients.forEach(i=>entries.push({...i,category:state.categories.find(c=>norm(c.name)===norm(i.category))?.id||'' ,quantity:scale(i.quantity,n)}));});if(!entries.length){say('Choisissez au moins une recette.');return;}askAppend(entries);return;}
     if(a==='category-ok'){const entries=[];document.querySelectorAll('[data-pick]:checked').forEach(ch=>{const [cat,name]=ch.dataset.pick.split('|'),q=$(`[data-pick-qty="${CSS.escape(ch.dataset.pick)}"]`)?.value||'',unit=$(`[data-pick-unit="${CSS.escape(ch.dataset.pick)}"]`)?.value||'';entries.push({name,quantity:q,unit,category:cat});});if(!entries.length){say('Choisissez au moins un article.');return;}askAppend(entries);return;}
-    if(a==='open-pdf'){const f=state.pdfs.find(x=>x.id===id);if(f){if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(f.blob);activePdfId=f.id;activePdfName=pdfDisplayName(f.name);renderPdfs();document.body.classList.add('pdf-open');}return;}
-    if(a==='close-pdf'){closePdf();return;}
-    if(a==='new-pdf-view'){if(pdfUrl)window.open(pdfUrl,'_blank');return;}
+    if(a==='open-pdf'){const f=state.pdfs.find(x=>x.id===id);if(f){const url=URL.createObjectURL(f.blob);pdfObjectUrls.add(url);const opened=window.open(url,'_blank');if(opened)opened.opener=null;else window.location.assign(url);}return;}
     if(a==='rename-pdf'){const f=state.pdfs.find(x=>x.id===id),name=prompt('Nouveau nom du fichier',pdfDisplayName(f?.name||''));if(f&&name?.trim()){f.name=pdfDisplayName(name.trim());await put('pdfs',f);renderPdfs();}return;}
     if(a==='delete-pdf'){await deletePdf(id);return;}
   });
-  // Réordonnancement : appui long de 500 ms, annulé dès le début d’un scroll.
+  // Réordonnancement au toucher : appui long, carte flottante, emplacement animé et sauvegarde IndexedDB.
   let dragState=null;
   const categoryList=$('#view');
+  function flipCategoryCards(list, mutate){
+    const cards=[...list.querySelectorAll('.category-card')], before=new Map(cards.map(card=>[card,card.getBoundingClientRect().top]));
+    mutate();
+    for(const card of cards){if(card===dragState?.card)continue;const delta=before.get(card)-card.getBoundingClientRect().top;if(Math.abs(delta)<1)continue;
+      card.style.transition='none';card.style.transform=`translate3d(0,${delta}px,0)`;void card.offsetHeight;
+      requestAnimationFrame(()=>{card.style.transition='';card.style.transform='';});
+    }
+  }
   function beginCategoryPress(card,x,y,pointerId=null){
     if(!card||dragState)return;
-    dragState={card,pointerId,startX:x,startY:y,x,y,started:false,timer:setTimeout(()=>{
-      if(!dragState)return;dragState.started=true;card.classList.add('dragging');document.body.classList.add('category-dragging');
+    const d=dragState={card,pointerId,startX:x,startY:y,x,y,started:false,timer:null,placeholder:null,rect:null,raf:null,originalStyle:card.getAttribute('style')};
+    d.timer=setTimeout(()=>{
+      if(dragState!==d)return;d.started=true;d.rect=card.getBoundingClientRect();
+      d.placeholder=document.createElement('div');d.placeholder.className='category-placeholder';d.placeholder.style.height=`${d.rect.height}px`;
+      card.before(d.placeholder);card.classList.add('dragging');document.body.classList.add('category-dragging');$('.category-list')?.classList.add('drag-active');
+      card.style.position='fixed';card.style.left=`${d.rect.left}px`;card.style.top=`${d.rect.top}px`;card.style.width=`${d.rect.width}px`;card.style.margin='0';card.style.zIndex='40';card.style.pointerEvents='none';
+      card.style.transform=`translate3d(0,0,0) scale(1.025)`;
       if(pointerId!==null)try{card.setPointerCapture(pointerId);}catch(_){}
-    },500)};
+      try{navigator.vibrate?.(14);}catch(_){}
+      d.raf=requestAnimationFrame(autoScrollCategoryDrag);
+    },500);
   }
-  function moveCategoryTo(y){
-    const list=$('.category-list');if(!list||!dragState)return;
-    const cards=[...list.querySelectorAll('.category-card:not(.dragging)')];let inserted=false;
-    for(const target of cards){const r=target.getBoundingClientRect();if(y<r.top+r.height/2){list.insertBefore(dragState.card,target);inserted=true;break;}}
-    if(!inserted)list.appendChild(dragState.card);
+  function placeDraggedCard(y){
+    const list=$('.category-list');if(!list||!dragState?.placeholder)return;
+    const d=dragState, cards=[...list.querySelectorAll('.category-card')].filter(card=>card!==d.card);
+    let target=cards.find(card=>y<card.getBoundingClientRect().top+card.getBoundingClientRect().height/2);
+    if(target){if(d.placeholder.nextElementSibling!==target)flipCategoryCards(list,()=>list.insertBefore(d.placeholder,target));}
+    else if(d.placeholder!==list.lastElementChild)flipCategoryCards(list,()=>list.appendChild(d.placeholder));
+  }
+  function updateCategoryDrag(x,y){
+    if(!dragState?.started)return;const d=dragState;d.x=x;d.y=y;
+    d.card.style.transform=`translate3d(${x-d.startX}px,${y-d.startY}px,0) scale(1.025)`;
+    placeDraggedCard(y);
+  }
+  function autoScrollCategoryDrag(){
+    if(!dragState?.started)return;const edge=72,speed=14,y=dragState.y;
+    if(y<edge)window.scrollBy(0,-Math.ceil(speed*(edge-y)/edge));
+    else if(y>window.innerHeight-edge)window.scrollBy(0,Math.ceil(speed*(y-(window.innerHeight-edge))/edge));
+    placeDraggedCard(y);dragState.raf=requestAnimationFrame(autoScrollCategoryDrag);
   }
   async function finishCategoryDrag(){
     if(!dragState)return;const d=dragState;clearTimeout(d.timer);dragState=null;
-    if(!d.started)return;d.card.classList.remove('dragging');document.body.classList.remove('category-dragging');
+    if(d.raf)cancelAnimationFrame(d.raf);
+    if(!d.started)return;
     const list=$('.category-list');if(!list)return;
+    flipCategoryCards(list,()=>d.placeholder.replaceWith(d.card));
+    d.card.classList.remove('dragging');if(d.originalStyle===null)d.card.removeAttribute('style');else d.card.setAttribute('style',d.originalStyle);
+    document.body.classList.remove('category-dragging');list.classList.remove('drag-active');
     const ids=[...list.querySelectorAll('.category-card')].map(x=>x.dataset.categoryId);
     state.categories.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));state.categories.forEach((c,i)=>c.order=i);
-    await replaceStore('categories',state.categories);renderCategories();
+    await replaceStore('categories',state.categories);setTimeout(()=>{if(tab==='cats')renderCategories();},220);
   }
+  function cancelCategoryPress(){if(dragState&&!dragState.started){clearTimeout(dragState.timer);dragState=null;}}
   categoryList.addEventListener('pointerdown',e=>{
     if(e.pointerType==='touch')return;const card=e.target.closest('.category-card');
     if(!card||e.target.closest('button,input,select,form'))return;beginCategoryPress(card,e.clientX,e.clientY,e.pointerId);
   });
   categoryList.addEventListener('pointermove',e=>{
     if(!dragState||dragState.pointerId!==e.pointerId)return;
-    if(!dragState.started&&Math.hypot(e.clientX-dragState.startX,e.clientY-dragState.startY)>9){clearTimeout(dragState.timer);dragState=null;return;}
-    if(dragState.started){e.preventDefault();moveCategoryTo(e.clientY);}
+    if(!dragState.started&&Math.hypot(e.clientX-dragState.startX,e.clientY-dragState.startY)>9){cancelCategoryPress();return;}
+    if(dragState.started){e.preventDefault();updateCategoryDrag(e.clientX,e.clientY);}
   },{passive:false});
   categoryList.addEventListener('pointerup',e=>{if(dragState?.pointerId===e.pointerId)finishCategoryDrag();});
   categoryList.addEventListener('pointercancel',e=>{if(dragState?.pointerId===e.pointerId)finishCategoryDrag();});
@@ -175,23 +205,18 @@
   },{passive:true});
   categoryList.addEventListener('touchmove',e=>{
     if(!dragState||e.touches.length!==1)return;const t=e.touches[0];
-    if(!dragState.started&&Math.hypot(t.clientX-dragState.startX,t.clientY-dragState.startY)>9){clearTimeout(dragState.timer);dragState=null;return;}
-    if(dragState.started){e.preventDefault();moveCategoryTo(t.clientY);}
-  },{passive:false});
-  categoryList.addEventListener('touchmove',e=>{
-    if(!pdfSwipe||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-pdfSwipe.x,dy=t.clientY-pdfSwipe.y;
-    if(dx < -12 && Math.abs(dx)>Math.abs(dy)){pdfSwipe.moved=true;e.preventDefault();}
+    if(!dragState.started&&Math.hypot(t.clientX-dragState.startX,t.clientY-dragState.startY)>9){cancelCategoryPress();return;}
+    if(dragState.started){e.preventDefault();updateCategoryDrag(t.clientX,t.clientY);}
   },{passive:false});
   categoryList.addEventListener('touchend',e=>{
-    if(dragState){finishCategoryDrag();return;}
+    if(dragState)finishCategoryDrag();
     if(!pdfSwipe)return;const swipe=pdfSwipe,t=e.changedTouches[0],dx=t.clientX-swipe.x,dy=t.clientY-swipe.y;pdfSwipe=null;
     if(dx < -55 && Math.abs(dx)>Math.abs(dy)){suppressPdfClick=true;setTimeout(()=>{suppressPdfClick=false;},800);deletePdf(swipe.id);}
   },{passive:true});
   categoryList.addEventListener('touchcancel',()=>{if(dragState)finishCategoryDrag();pdfSwipe=null;},{passive:true});
   let pdfSwipe=null;
   categoryList.addEventListener('touchstart',e=>{const row=e.target.closest('.pdf-card[data-pdf-row]');if(row&&e.touches.length===1)pdfSwipe={id:row.dataset.pdfRow,x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
-  async function deletePdf(id){if(!confirm('Supprimer cette fiche PDF ?'))return;if(activePdfId===id)closePdf();state.pdfs=state.pdfs.filter(x=>x.id!==id);await del('pdfs',id);renderPdfs();}
-  function closePdf(){if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=null;activePdfId=null;activePdfName='';document.body.classList.remove('pdf-open');renderPdfs();}
+  async function deletePdf(id){if(!confirm('Supprimer cette fiche PDF ?'))return;state.pdfs=state.pdfs.filter(x=>x.id!==id);await del('pdfs',id);renderPdfs();}
   function scale(q,n){const v=qtyNum(q);return v===null?String(q||''):String(Math.round(v*n*1000)/1000).replace('.',',');}
   document.addEventListener('change',async e=>{
     if(e.target.id==='csv-file'){const file=e.target.files[0];if(file)afterImport(await file.text());e.target.value='';}
