@@ -1,0 +1,13 @@
+﻿recette,moment,ingredient,quantite,unite,categorie,ordre,repas
+"Spaghetti bolognaise","midi|soir","Spaghetti","400","g","Produits secs","1","4"
+"Spaghetti bolognaise","midi|soir","Bœuf haché","400","g","Viandes et poissons","2","4"
+"Spaghetti bolognaise","midi|soir","Coulis de tomate","400","ml","Produits secs","3","4"
+"Spaghetti bolognaise","midi|soir","Oignon","1","u","Fruits et légumes","4","4"
+"Spaghetti bolognaise","midi|soir","Huile d’olive","1","cas","Produits secs","5","4"
+"Spaghetti bolognaise","midi|soir","Origan séché","1","cac","Produits secs","6","4"
+"Crêpes salées aux champignons et salade","soir","Farine","250","","Produits secs","1","2"
+"Crêpes salées aux champignons et salade","soir","Lait","300","ml","Frais","2","2"
+"Crêpes salées aux champignons et salade","soir","Œufs","2","u","Frais","3","2"
+"Crêpes salées aux champignons et salade","soir","Champignons","200","g","Fruits et légumes","4","2"
+"Crêpes salées aux champignons et salade","soir","Huile d’olive","1","cas","Produits secs","5","2"
+"Crêpes salées aux champignons et salade","soir","Laitue","1","u","Fruits et légumes","6","2"
