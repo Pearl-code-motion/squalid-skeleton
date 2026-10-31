@@ -63,7 +63,7 @@
     if(typeof module!=='undefined')module.exports={DEFAULT_CATEGORIES,CSV_COLUMNS,parseCSV,validateCSV,recipeSignature,reconcileRecipes,mergeListItem,displayQty,norm,qtyNum};
     return;
   }
-  const view=$('#view'), toast=$('#toast'); let db, state={recipes:[],categories:[],pdfs:[],list:[]}, tab='list', modalOpen=false, workflow=null, monthCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1), days=new Map(), selectedCounts={}, pdfUrl=null;
+  const view=$('#view'), toast=$('#toast'); let db, state={recipes:[],categories:[],pdfs:[],list:[]}, tab='list', modalOpen=false, workflow=null, activePdfId=null, activePdfName='', monthCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1), days=new Map(), selectedCounts={}, pdfUrl=null;
   const dbReq=(req)=>new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
   function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('courses-local-v1',1);req.onupgradeneeded=()=>{const d=req.result;for(const n of ['recipes','categories','pdfs','list'])if(!d.objectStoreNames.contains(n))d.createObjectStore(n,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
   async function all(store){return dbReq(db.transaction(store,'readonly').objectStore(store).getAll());}
@@ -76,8 +76,9 @@
   function button(action,text,cls=''){return `<button class="button ${cls}" data-action="${action}">${text}</button>`;}
   function categoryName(id){return state.categories.find(c=>c.id===id)?.name||id||'Sans catégorie';}
   function renderImport(){page('Importer','RECETTES · CSV',`<section class="group"><p class="hint">CSV UTF‑8 avec en-tête exact : recette,moment,ingredient,quantite,unite,categorie,ordre. Virgule ou point-virgule accepté. L’import est validé en entier avant toute modification.</p><label class="file-pick">Choisir un fichier CSV<input type="file" id="csv-file" accept=".csv,text/csv"></label></section><section class="group"><h2>Mes recettes <span class="muted">${state.recipes.length}</span></h2>${state.recipes.length?state.recipes.map(r=>`<details class="recipe-entry"><summary><b>${esc(r.name)}</b><small>${(r.moments||[]).map(esc).join(' · ')} · ${r.ingredients.length} ingrédients</small><button class="text-button" data-action="delete-recipe" data-id="${esc(r.id)}" aria-label="Supprimer">Supprimer</button></summary><div>${r.ingredients.map(i=>`<p>${esc(i.name)} <span class="muted">${esc([i.quantity,i.unit,categoryName(i.category)].filter(Boolean).join(' · '))}</span></p>`).join('')}</div></details>`).join(''):'<p class="muted">Aucune recette importée.</p>'}</section><section class="group">${button('export-csv','Exporter les recettes','secondary')}</section>`);}
-  function renderCategories(){page('Catégories','ORGANISATION',`<section class="group">${state.categories.map((c,i)=>`<article class="category-card"><div class="cat-head"><b>${esc(c.name)}</b><div><button data-action="move-cat" data-id="${esc(c.id)}" data-dir="-1" aria-label="Monter" ${i===0?'disabled':''}>↑</button><button data-action="move-cat" data-id="${esc(c.id)}" data-dir="1" aria-label="Descendre" ${i===state.categories.length-1?'disabled':''}>↓</button><button class="text-button" data-action="delete-cat" data-id="${esc(c.id)}">Supprimer</button></div></div><small>Catalogue · ${c.ingredients.length}</small><div class="chips">${c.ingredients.map(x=>`<span>${esc(x)}</span>`).join('')||'<span class="muted">Aucun ingrédient</span>'}</div><form class="inline-form" data-form="catalog" data-id="${esc(c.id)}"><input name="name" placeholder="Ajouter un ingrédient" required><button>＋</button></form></article>`).join('')}</section><form class="group inline-form" data-form="new-cat"><input name="name" placeholder="Nouvelle catégorie" required><button class="button">Ajouter</button></form>`);}
-  function renderPdfs(){page('Fiches','DOCUMENTS · STOCKAGE LOCAL',`${pdfUrl?`<section class="group pdf-viewer"><button class="button secondary" data-action="close-pdf">Fermer la fiche</button><iframe title="Fiche PDF" src="${esc(pdfUrl)}"></iframe></section>`:''}<section class="group"><label class="file-pick">Importer un ou plusieurs PDF<input id="pdf-file" type="file" accept="application/pdf,.pdf" multiple></label><p class="hint">Les fichiers sont stockés localement dans IndexedDB.</p></section><section class="group">${state.pdfs.length?state.pdfs.map(f=>`<div class="pdf-row"><span>▤ ${esc(f.name)}</span><div><button data-action="open-pdf" data-id="${esc(f.id)}">Ouvrir</button><button data-action="rename-pdf" data-id="${esc(f.id)}">Renommer</button><button data-action="delete-pdf" data-id="${esc(f.id)}">Supprimer</button></div></div>`).join(''):'<p class="muted">Aucune fiche PDF.</p>'}</section>`);}
+  function renderCategories(){page('Catégories','ORGANISATION',`<section class="group category-list">${state.categories.map((c,i)=>`<article class="category-card" data-category-id="${esc(c.id)}"><div class="cat-head"><b><span class="drag-grip" aria-hidden="true">⠿</span>${esc(c.name)}</b><div><button data-action="move-cat" data-id="${esc(c.id)}" data-dir="-1" aria-label="Monter" ${i===0?'disabled':''}>↑</button><button data-action="move-cat" data-id="${esc(c.id)}" data-dir="1" aria-label="Descendre" ${i===state.categories.length-1?'disabled':''}>↓</button><button class="text-button" data-action="delete-cat" data-id="${esc(c.id)}">Supprimer</button></div></div><small>Catalogue · ${c.ingredients.length}</small><div class="chips">${c.ingredients.map(x=>`<span>${esc(x)}</span>`).join('')||'<span class="muted">Aucun ingrédient</span>'}</div><form class="inline-form" data-form="catalog" data-id="${esc(c.id)}"><input name="name" placeholder="Ajouter un ingrédient" required><button>＋</button></form></article>`).join('')}</section><p class="hint reorder-hint">Maintenez une catégorie environ une demi-seconde, puis faites-la glisser pour la déplacer.</p><form class="group inline-form" data-form="new-cat"><input name="name" placeholder="Nouvelle catégorie" required><button class="button">Ajouter</button></form>`);}
+  function pdfDisplayName(name){return String(name||'').replace(/\.pdf$/i,'');}
+  function renderPdfs(){page('Fiches','DOCUMENTS · STOCKAGE LOCAL',`<section class="group"><label class="file-pick">Importer un ou plusieurs PDF<input id="pdf-file" type="file" accept="application/pdf,.pdf" multiple></label><p class="hint">Les fichiers sont stockés localement dans IndexedDB.</p></section><section class="pdf-list">${state.pdfs.length?state.pdfs.map(f=>`<article class="pdf-card" data-pdf-row="${esc(f.id)}" data-action="open-pdf" data-id="${esc(f.id)}" role="button" tabindex="0" aria-label="Ouvrir ${esc(pdfDisplayName(f.name))}"><span class="pdf-name">${esc(pdfDisplayName(f.name))}</span><button class="pdf-icon-button" data-action="rename-pdf" data-id="${esc(f.id)}" aria-label="Renommer ${esc(pdfDisplayName(f.name))}" title="Renommer">✎</button><button class="pdf-icon-button pdf-cross" data-action="delete-pdf" data-id="${esc(f.id)}" aria-label="Supprimer ${esc(pdfDisplayName(f.name))}" title="Supprimer">✕</button></article>`).join(''):'<section class="group empty-state"><b>Aucune fiche PDF</b><p>Importez vos documents pour les retrouver ici.</p></section>'}</section>${pdfUrl?`<section class="pdf-overlay" role="dialog" aria-modal="true" aria-label="Aperçu PDF"><header class="pdf-overlay-bar"><button class="pdf-close" data-action="close-pdf">Fermer</button><strong>${esc(activePdfName||'Fiche PDF')}</strong><button class="pdf-new-view" data-action="new-pdf-view">Ouvrir dans une autre vue</button></header><div class="pdf-frame-scroll"><iframe title="Aperçu de la fiche PDF" src="${esc(pdfUrl)}"></iframe></div></section>`:''}`);}
   function groupedList(){const map=new Map();state.list.forEach(x=>{const k=norm(x.name);if(!map.has(k))map.set(k,[]);map.get(k).push(x);});return map;}
   function renderList(){const grouped=groupedList();let body='';state.categories.forEach(cat=>{const items=state.list.filter(i=>i.category===cat.id);if(!items.length)return;body+=`<section class="list-group"><h2>${esc(cat.name)}</h2>${items.map(i=>`<div class="shopping-row ${i.checked?'checked':''}"><input type="checkbox" data-action="toggle" data-id="${esc(i.id)}" ${i.checked?'checked':''} aria-label="Cocher ${esc(i.name)}"><span>${esc(i.name)}</span><small>${esc(displayQty(i))}</small></div>`).join('')}</section>`;});
     const uncategorized=state.list.filter(i=>!state.categories.some(c=>c.id===i.category));if(uncategorized.length)body+=`<section class="list-group"><h2>Autres</h2>${uncategorized.map(i=>`<div class="shopping-row ${i.checked?'checked':''}"><input type="checkbox" data-action="toggle" data-id="${esc(i.id)}"><span>${esc(i.name)}</span><small>${esc(displayQty(i))}</small></div>`).join('')}</section>`;
@@ -100,7 +101,9 @@
   function selectedNewList(entries,mode='append'){if(mode==='replace')state.list=[];entries.forEach(x=>mergeListItem(state.list,x,1));replaceStore('list',state.list).then(()=>{setTab('list');say(mode==='replace'?'Liste remplacée.':'Articles ajoutés à la liste.');});}
   function askAppend(entries){if(!state.list.length)return selectedNewList(entries);$('#merge-modal').hidden=false;$('#merge-modal').dataset.payload=JSON.stringify(entries);}
 
-  document.addEventListener('click',async e=>{const tabButton=e.target.closest('[data-tab]');if(tabButton){setTab(tabButton.dataset.tab);return;}const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action,id=b.dataset.id;
+  document.addEventListener('keydown',e=>{const card=e.target.closest('.pdf-card[role=button]');if(card&&e.target===card&&(e.key==='Enter'||e.key===' ')){e.preventDefault();card.click();}});
+  let suppressPdfClick=false;
+  document.addEventListener('click',async e=>{if(suppressPdfClick&&e.target.closest('.pdf-card[data-pdf-row]')){e.preventDefault();e.stopImmediatePropagation();suppressPdfClick=false;return;}const tabButton=e.target.closest('[data-tab]');if(tabButton){setTab(tabButton.dataset.tab);return;}const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action,id=b.dataset.id;
     if(a==='home'){showHome();return;} if(a==='home-close'){hideHome();return;}
     if(a==='home-generate'){hideHome();showGeneratorChoice();return;} if(a==='home-open'){hideHome();setTab(tab);return;}
     if(a==='choose-recipes'){ $('#choice-modal').hidden=true;workflow={passed:false};days.clear();selectedCounts={};monthCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1);renderCalendar();return;}
@@ -125,15 +128,74 @@
     if(a==='count'){const n=Math.max(0,(selectedCounts[b.dataset.key]||0)+Number(b.dataset.delta));if(n)selectedCounts[b.dataset.key]=n;else delete selectedCounts[b.dataset.key];renderRecipePicker();return;}
     if(a==='recipe-ok'){const entries=[];Object.entries(selectedCounts).forEach(([key,n])=>{const r=state.recipes.find(x=>x.id===key.split(':').slice(1).join(':'));r?.ingredients.forEach(i=>entries.push({...i,category:state.categories.find(c=>norm(c.name)===norm(i.category))?.id||'' ,quantity:scale(i.quantity,n)}));});if(!entries.length){say('Choisissez au moins une recette.');return;}askAppend(entries);return;}
     if(a==='category-ok'){const entries=[];document.querySelectorAll('[data-pick]:checked').forEach(ch=>{const [cat,name]=ch.dataset.pick.split('|'),q=$(`[data-pick-qty="${CSS.escape(ch.dataset.pick)}"]`)?.value||'',unit=$(`[data-pick-unit="${CSS.escape(ch.dataset.pick)}"]`)?.value||'';entries.push({name,quantity:q,unit,category:cat});});if(!entries.length){say('Choisissez au moins un article.');return;}askAppend(entries);return;}
-    if(a==='open-pdf'){const f=state.pdfs.find(x=>x.id===id);if(f){if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(f.blob);renderPdfs();}return;}
-    if(a==='close-pdf'){if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=null;renderPdfs();return;}
-    if(a==='rename-pdf'){const f=state.pdfs.find(x=>x.id===id),name=prompt('Nouveau nom du fichier',f?.name||'');if(f&&name?.trim()){f.name=name.trim();await put('pdfs',f);renderPdfs();}return;}
-    if(a==='delete-pdf'){if(confirm('Supprimer ce PDF ?')){state.pdfs=state.pdfs.filter(x=>x.id!==id);await del('pdfs',id);renderPdfs();}return;}
+    if(a==='open-pdf'){const f=state.pdfs.find(x=>x.id===id);if(f){if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(f.blob);activePdfId=f.id;activePdfName=pdfDisplayName(f.name);renderPdfs();document.body.classList.add('pdf-open');}return;}
+    if(a==='close-pdf'){closePdf();return;}
+    if(a==='new-pdf-view'){if(pdfUrl)window.open(pdfUrl,'_blank');return;}
+    if(a==='rename-pdf'){const f=state.pdfs.find(x=>x.id===id),name=prompt('Nouveau nom du fichier',pdfDisplayName(f?.name||''));if(f&&name?.trim()){f.name=pdfDisplayName(name.trim());await put('pdfs',f);renderPdfs();}return;}
+    if(a==='delete-pdf'){await deletePdf(id);return;}
   });
+  // Réordonnancement : appui long de 500 ms, annulé dès le début d’un scroll.
+  let dragState=null;
+  const categoryList=$('#view');
+  function beginCategoryPress(card,x,y,pointerId=null){
+    if(!card||dragState)return;
+    dragState={card,pointerId,startX:x,startY:y,x,y,started:false,timer:setTimeout(()=>{
+      if(!dragState)return;dragState.started=true;card.classList.add('dragging');document.body.classList.add('category-dragging');
+      if(pointerId!==null)try{card.setPointerCapture(pointerId);}catch(_){}
+    },500)};
+  }
+  function moveCategoryTo(y){
+    const list=$('.category-list');if(!list||!dragState)return;
+    const cards=[...list.querySelectorAll('.category-card:not(.dragging)')];let inserted=false;
+    for(const target of cards){const r=target.getBoundingClientRect();if(y<r.top+r.height/2){list.insertBefore(dragState.card,target);inserted=true;break;}}
+    if(!inserted)list.appendChild(dragState.card);
+  }
+  async function finishCategoryDrag(){
+    if(!dragState)return;const d=dragState;clearTimeout(d.timer);dragState=null;
+    if(!d.started)return;d.card.classList.remove('dragging');document.body.classList.remove('category-dragging');
+    const list=$('.category-list');if(!list)return;
+    const ids=[...list.querySelectorAll('.category-card')].map(x=>x.dataset.categoryId);
+    state.categories.sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));state.categories.forEach((c,i)=>c.order=i);
+    await replaceStore('categories',state.categories);renderCategories();
+  }
+  categoryList.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='touch')return;const card=e.target.closest('.category-card');
+    if(!card||e.target.closest('button,input,select,form'))return;beginCategoryPress(card,e.clientX,e.clientY,e.pointerId);
+  });
+  categoryList.addEventListener('pointermove',e=>{
+    if(!dragState||dragState.pointerId!==e.pointerId)return;
+    if(!dragState.started&&Math.hypot(e.clientX-dragState.startX,e.clientY-dragState.startY)>9){clearTimeout(dragState.timer);dragState=null;return;}
+    if(dragState.started){e.preventDefault();moveCategoryTo(e.clientY);}
+  },{passive:false});
+  categoryList.addEventListener('pointerup',e=>{if(dragState?.pointerId===e.pointerId)finishCategoryDrag();});
+  categoryList.addEventListener('pointercancel',e=>{if(dragState?.pointerId===e.pointerId)finishCategoryDrag();});
+  categoryList.addEventListener('touchstart',e=>{
+    const card=e.target.closest('.category-card');if(!card||e.target.closest('button,input,select,form')||e.touches.length!==1)return;
+    beginCategoryPress(card,e.touches[0].clientX,e.touches[0].clientY);
+  },{passive:true});
+  categoryList.addEventListener('touchmove',e=>{
+    if(!dragState||e.touches.length!==1)return;const t=e.touches[0];
+    if(!dragState.started&&Math.hypot(t.clientX-dragState.startX,t.clientY-dragState.startY)>9){clearTimeout(dragState.timer);dragState=null;return;}
+    if(dragState.started){e.preventDefault();moveCategoryTo(t.clientY);}
+  },{passive:false});
+  categoryList.addEventListener('touchmove',e=>{
+    if(!pdfSwipe||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-pdfSwipe.x,dy=t.clientY-pdfSwipe.y;
+    if(dx < -12 && Math.abs(dx)>Math.abs(dy)){pdfSwipe.moved=true;e.preventDefault();}
+  },{passive:false});
+  categoryList.addEventListener('touchend',e=>{
+    if(dragState){finishCategoryDrag();return;}
+    if(!pdfSwipe)return;const swipe=pdfSwipe,t=e.changedTouches[0],dx=t.clientX-swipe.x,dy=t.clientY-swipe.y;pdfSwipe=null;
+    if(dx < -55 && Math.abs(dx)>Math.abs(dy)){suppressPdfClick=true;setTimeout(()=>{suppressPdfClick=false;},800);deletePdf(swipe.id);}
+  },{passive:true});
+  categoryList.addEventListener('touchcancel',()=>{if(dragState)finishCategoryDrag();pdfSwipe=null;},{passive:true});
+  let pdfSwipe=null;
+  categoryList.addEventListener('touchstart',e=>{const row=e.target.closest('.pdf-card[data-pdf-row]');if(row&&e.touches.length===1)pdfSwipe={id:row.dataset.pdfRow,x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:true});
+  async function deletePdf(id){if(!confirm('Supprimer cette fiche PDF ?'))return;if(activePdfId===id)closePdf();state.pdfs=state.pdfs.filter(x=>x.id!==id);await del('pdfs',id);renderPdfs();}
+  function closePdf(){if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=null;activePdfId=null;activePdfName='';document.body.classList.remove('pdf-open');renderPdfs();}
   function scale(q,n){const v=qtyNum(q);return v===null?String(q||''):String(Math.round(v*n*1000)/1000).replace('.',',');}
   document.addEventListener('change',async e=>{
     if(e.target.id==='csv-file'){const file=e.target.files[0];if(file)afterImport(await file.text());e.target.value='';}
-    if(e.target.id==='pdf-file'){for(const f of e.target.files){const rec={id:uid(),name:f.name,blob:f,type:f.type||'application/pdf'};state.pdfs.push(rec);await put('pdfs',rec);}renderPdfs();say(`${e.target.files.length} fiche(s) ajoutée(s).`);}
+    if(e.target.id==='pdf-file'){for(const f of e.target.files){const rec={id:uid(),name:pdfDisplayName(f.name),blob:f,type:f.type||'application/pdf'};state.pdfs.push(rec);await put('pdfs',rec);}renderPdfs();say(`${e.target.files.length} fiche(s) ajoutée(s).`);}
     if(e.target.dataset.meal){const d=days.get(e.target.dataset.date);if(d)d[e.target.dataset.meal]=e.target.checked;}
   });
   document.addEventListener('submit',async e=>{const form=e.target;if(form.dataset.form==='new-cat'){e.preventDefault();const name=new FormData(form).get('name').trim();if(state.categories.some(c=>norm(c.name)===norm(name)))return say('Cette catégorie existe déjà.');state.categories.push({id:uid(),name,order:state.categories.length,ingredients:[]});await replaceStore('categories',state.categories);renderCategories();return;}
