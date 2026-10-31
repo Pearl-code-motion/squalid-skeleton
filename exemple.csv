@@ -1,8 +1,8 @@
-recette,moment,ingredient,quantite,unite,categorie,ordre
-Pâtes bolognaise,midi|soir,Pâtes,400,g,Produits secs,1
-Pâtes bolognaise,midi|soir,Viande hachée,300,g,Viandes et poissons,2
-Pâtes bolognaise,midi|soir,Tomates concassées,1,u,Produits secs,3
-Omelette,midi,Oeufs,4,u,Frais,1
-Omelette,midi,Beurre,20,g,Frais,2
-Yaourt fruits,gouter,Yaourt nature,2,u,Frais,1
-Yaourt fruits,gouter,Fraises,150,g,Fruits et légumes,2
+recette,moment,ingredient,quantite,unite,categorie,ordre,repas
+Pâtes bolognaise,midi|soir,Pâtes,400,g,Produits secs,1,4
+Pâtes bolognaise,midi|soir,Viande hachée,300,g,Viandes et poissons,2,4
+Pâtes bolognaise,midi|soir,Tomates concassées,1,u,Produits secs,3,4
+Omelette,midi,Oeufs,4,u,Frais,1,1
+Omelette,midi,Beurre,20,g,Frais,2,1
+Yaourt fruits,gouter,Yaourt nature,2,u,Frais,1,1
+Yaourt fruits,gouter,Fraises,150,g,Fruits et légumes,2,1
