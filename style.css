@@ -109,3 +109,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .topbar { background: color-mix(in srgb, var(--bg) 88%, transparent); }
   .toast { background: #f1edfa; color: #2b2540; }
 }
+.meal-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
+.person-counter { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.person-counter button { border: 0; border-radius: 9px; width: 32px; height: 30px; background: var(--pastel-blue); color: var(--ink); font-weight: 750; }
+.person-counter b { min-width: 14px; text-align: center; color: var(--ink); }
+.sticky-count { display: flex; gap: 8px; }
+.sticky-count b { border-radius: 18px; padding: 2px 6px; }
+.sticky-count .goal-open { background: var(--pastel-pink); }
+.sticky-count .goal-met { background: #3a7fad; color: white; }
+.meal-recipe-row > span { min-width: 125px; }
+.meal-recipe-row small { display: block; color: var(--muted); font-size: 12px; }
+.meal-recipe-row select { min-width: 0; max-width: 56%; padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--ink); }
+@media (max-width: 380px) { .day-options { gap: 8px; } .meal-option { align-items: flex-start; } .person-counter { gap: 6px; } }
+.person-counter b { width: auto; text-transform: none; }
