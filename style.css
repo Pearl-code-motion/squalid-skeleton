@@ -174,8 +174,7 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 .category-list .category-card:first-child { border-top: 0; }
 .csv-help summary { color: var(--violet); font-weight: 700; padding: 5px 0 10px; cursor: pointer; }
 .recipes-empty { color: var(--muted); line-height: 1.6; padding: 22px 0; }
-.generated-week { margin: 0 0 30px; }
-.generated-week .week-date { margin-bottom: 8px; }
+.generated-group { margin: 0 0 30px; }
 .week-controls { display: flex; justify-content: flex-end; padding: 2px 0 8px; }
 .week-controls .text-button { color: var(--muted); font-size: 12px; }
 .week-controls.all-weeks { border-top: 1px solid var(--line); padding-top: 12px; }
@@ -460,8 +459,6 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 .manual-no-tags { width: 100%; margin: 4px 0; }
 #merge-modal .choice.choice-solid { background: var(--violet); border-color: var(--violet); color: #fff; }
 #merge-modal .choice.choice-outline { background: #fff; border-color: var(--violet); color: var(--violet); }
-#view[data-page="recettes"] .week-date { background: #F2EDFC; border-color: #F2EDFC; }
-#view[data-page="recettes"] .week-date p,
 #view[data-page="recettes"] .week-moment h3 { color: #9A7DDD; }
 .category-ingredient-form[hidden] { display: none !important; }
 
@@ -492,3 +489,6 @@ input.input-invalid { border-color: color-mix(in srgb, var(--danger) 65%, white)
 .list-group-title { margin:0 0 4px !important; padding:6px 0 !important; border:0 !important; color:var(--violet); text-transform:none; }
 .meal-total { color:var(--ink); }
 .meal-total b { background:color-mix(in srgb,var(--violet) 13%,white); color:var(--violet); }
+
+/* Onglet Recettes : suppression globale en tête, sans repère de semaine/date. */
+.recipes-toolbar.week-controls.all-weeks { justify-content: flex-end; margin: 0 0 12px; padding: 0; border-top: 0; }
