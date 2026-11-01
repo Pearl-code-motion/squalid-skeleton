@@ -422,3 +422,48 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 
 .empty-list-category { margin: 5px 0; padding: 9px 13px; }
 .empty-list-category .list-add-form { margin-bottom: 4px; }
+
+
+/* Parcours Courses et ajout manuel : commandes lisibles, catégories sans en-tête intrusif. */
+.list-actions { flex-wrap: wrap; }
+.list-workflows { width: 100%; flex-basis: 100%; }
+.list-workflows-empty { display: flex; gap: 8px; margin: 0 0 18px; }
+.list-workflows-empty .button { flex: 1 1 0; min-width: 0; }
+.list-empty-message { margin: 18px 0; color: var(--muted); font-size: 14px; }
+.active-list-category { margin: 3px 0 10px; padding: 0 12px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.active-list-category + .active-list-category { border-top: 1px solid var(--line); padding-top: 5px; }
+.active-list-category .shopping-row:first-child { border-top: 0; }
+.active-list-category .shopping-row { touch-action: pan-y; cursor: grab; }
+.shopping-row.list-row-dragging { opacity: .48; background: #f3effb; outline: 1px dashed var(--violet); }
+.empty-categories { margin: 18px 0 5px; border-top: 1px solid var(--line); padding-top: 12px; }
+.empty-categories summary { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 14px; cursor: pointer; list-style: none; }
+.empty-categories summary::-webkit-details-marker { display: none; }
+.empty-categories summary::after { content: '⌄'; color: var(--violet); font-size: 20px; line-height: 1; }
+.empty-categories[open] summary::after { content: '⌃'; }
+.empty-category-list { padding: 7px 0 0 10px; }
+.empty-category-name { padding: 9px 0; color: var(--ink); font-size: 14px; border-bottom: 1px solid var(--line); }
+.category-actions { align-items: center; }
+.category-action-add { padding: 5px 10px; border: 1px solid var(--violet); border-radius: 9px; background: #fff; color: var(--violet); font-size: 12px; font-weight: 650; }
+.category-icon-btn, .category-icon-btn.delete-category { border-color: var(--violet); color: var(--violet); background: #fff; }
+.category-ingredient-form[hidden], .manual-add-form[hidden] { display: none; }
+.category-ingredient-form.inline-form { margin-top: 10px; }
+.manual-workflow-nav { justify-content: flex-end; }
+.manual-category-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.manual-category-head h2 { flex: 1; margin-bottom: 8px; }
+.manual-add-toggle { flex: 0 0 auto; width: 30px; height: 30px; border: 1px solid var(--violet); border-radius: 50%; background: #fff; color: var(--violet); font-size: 21px; line-height: 1; }
+.manual-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.manual-tag { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.manual-tag input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.manual-tag span { display: inline-flex; align-items: center; min-height: 36px; padding: 7px 12px; border: 1px solid color-mix(in srgb, var(--violet) 45%, white); border-radius: 20px; background: #fff; color: var(--violet); font-size: 14px; transition: background .15s, color .15s; }
+.manual-tag input:checked + span { border-color: var(--violet); background: var(--violet); color: #fff; }
+.manual-tag input:focus-visible + span { outline: 3px solid color-mix(in srgb, var(--violet) 55%, white); outline-offset: 2px; }
+.manual-add-form { margin-top: 12px; }
+.manual-no-tags { width: 100%; margin: 4px 0; }
+#merge-modal .choice.choice-solid { background: var(--violet); border-color: var(--violet); color: #fff; }
+#merge-modal .choice.choice-outline { background: #fff; border-color: var(--violet); color: var(--violet); }
+#view[data-page="recettes"] .week-date { background: #F2EDFC; border-color: #F2EDFC; }
+#view[data-page="recettes"] .week-date p,
+#view[data-page="recettes"] .week-moment h3 { color: #9A7DDD; }
+.category-ingredient-form[hidden] { display: none !important; }
+
+.category-picker-actions { bottom: 0; }
