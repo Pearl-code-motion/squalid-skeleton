@@ -137,7 +137,7 @@ body.workflow-active #tabbar { display: none; }
 .modal-nav { position: absolute; inset: 0 0 auto; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 0; }
 .modal-nav .modal-close { position: static; }
 #choice-modal .modal-card { padding-top: 56px; }
-#home-modal .modal-card { padding-top: 54px; }
+#home-modal .modal-card { padding-top: 26px; }
 @media (min-width: 760px) { .workflow-actions { left: 50%; right: auto; width: min(720px,100%); transform: translateX(-50%); padding-inline: 20px; } }
 
 /* Compteurs de recettes, planning hebdomadaire et actions fixées sur iPhone. */
@@ -265,10 +265,89 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 .recipes-empty-card p { margin: 0; color: inherit; font-size: 14px; font-weight: 400; line-height: 1.55; }
 .list-actions .button.primary { background: #fff; border: 1px solid var(--violet); color: var(--violet); }
 .list-actions .button.secondary { background: var(--violet); border: 1px solid var(--violet); color: #fff; }
-.list-actions .button.danger { background: #fff; border: 1px solid #d99aa5; color: #b76b79; }
+.list-actions .button.danger { background: #fff; border: 1px solid var(--danger); color: var(--danger); }
 @media (max-width: 460px) {
   .category-card .cat-head { align-items: flex-start; }
   .category-actions { gap: 4px; }
   .category-action-btn { padding-inline: 8px; }
 }
 .chips > .muted { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); }
+
+/* Finitions violettes du parcours et hiérarchie discrète des actions. */
+.button.outline-violet { background: #fff; border: 1px solid var(--violet); color: var(--violet); }
+#home-modal .choice-solid, #choice-modal .choice-solid { background: var(--violet); border-color: var(--violet); color: #fff; }
+#home-modal .choice-outline, #choice-modal .choice-outline { background: #fff; border-color: var(--violet); color: var(--violet); }
+.modal-close, .workflow-nav button:last-child, .modal-nav .modal-close {
+  border: 1px solid var(--danger);
+  background: #fff;
+  color: var(--danger);
+  font-size: 22px;
+}
+.calendar-grid .day {
+  background: #fff;
+  border: 1px solid #c9c7ce;
+  color: #5f5d65;
+  font-weight: 400;
+}
+.calendar-grid .day.selected {
+  background: color-mix(in srgb, var(--violet) 18%, white);
+  border-color: var(--violet);
+  color: var(--violet);
+  font-weight: 700;
+}
+.calendar-grid .day.past { opacity: .3; }
+.person-counter button, .recipe-counter button {
+  border-color: var(--violet);
+  background: color-mix(in srgb, var(--violet) 16%, white);
+  color: var(--violet);
+}
+.workflow-actions .button.primary, .form-actions .button.primary {
+  background: var(--violet);
+  border-color: var(--violet);
+  color: #fff;
+}
+.workflow-actions .button.secondary, .form-actions .button.secondary {
+  background: #fff;
+  border-color: var(--violet);
+  color: var(--violet);
+}
+.meal-option > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+.meal-option > label input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--violet);
+  flex: 0 0 auto;
+}
+.day-options > b { font-size: 15px; }
+.sticky-count .goal-open {
+  background: #fff;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+.sticky-count .goal-met { background: #6241a4; color: #fff; }
+.category-action-btn {
+  min-height: 0;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--violet);
+  font-size: 12px;
+  font-weight: 600;
+}
+.category-action-btn:hover { background: transparent; text-decoration: underline; }
+.category-action-btn[data-action="rename-cat"] { color: var(--muted); }
+.category-action-btn[data-action="delete-cat"] { color: var(--danger); }
+@media (max-width: 380px) {
+  .meal-option > label { font-size: 15px; }
+  .meal-option > label input[type="checkbox"] { width: 23px; height: 23px; }
+}
