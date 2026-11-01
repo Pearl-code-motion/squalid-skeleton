@@ -492,4 +492,13 @@ input.input-invalid { border-color: color-mix(in srgb, var(--danger) 65%, white)
 .meal-total b { background:color-mix(in srgb,var(--violet) 13%,white); color:var(--violet); }
 
 /* Onglet Recettes : suppression globale en tête, sans repère de semaine/date. */
-.recipes-toolbar.week-controls.all-weeks { justify-content: flex-end; margin: 0 0 12px; padding: 0; border-top: 0; }
+#view[data-page="recettes"] .page-head { padding-bottom: 5px; }
+.recipes-toolbar.week-controls.all-weeks { justify-content: flex-start; margin: -2px 0 8px; padding: 0; border-top: 0; }
+
+/* Liste discrète des produits non vendus par le magasin actif. */
+.hidden-ingredients { width: max-content; max-width: 100%; margin: -8px 0 14px auto; color: var(--muted); font-size: 12px; }
+.hidden-ingredients summary { display: flex; align-items: center; gap: 5px; cursor: pointer; list-style: none; }
+.hidden-ingredients summary::-webkit-details-marker { display: none; }
+.hidden-ingredients summary span { transition: transform .15s ease; }
+.hidden-ingredients[open] summary span { transform: rotate(180deg); }
+.hidden-ingredients-list { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; padding: 5px 4px 0; line-height: 1.4; }
