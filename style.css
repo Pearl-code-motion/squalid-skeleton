@@ -493,7 +493,15 @@ input.input-invalid { border-color: color-mix(in srgb, var(--danger) 65%, white)
 
 /* Onglet Recettes : suppression globale en tête, sans repère de semaine/date. */
 #view[data-page="recettes"] .page-head { padding-bottom: 5px; }
-.recipes-toolbar.week-controls.all-weeks { justify-content: flex-start; margin: -2px 0 8px; padding: 0; border-top: 0; }
+.recipes-page-head .page-title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.recipes-page-head .page-title-row h1 { min-width:0; }
+.recipes-delete-all { flex:0 0 auto; white-space:nowrap; }
+.recipe-person-choice { width:100%; border:0; border-top:1px solid var(--line); background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.recipe-person-choice.is-selected { color:var(--violet); font-weight:650; }
+.recipe-person-state { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+.person-badge { border-radius:999px; padding:3px 7px; background:color-mix(in srgb,var(--violet) 14%,white); color:var(--violet); font-size:11px; font-weight:750; }
+.recipe-select-mark { display:grid; place-items:center; width:28px; height:28px; border:1px solid var(--line); border-radius:50%; color:var(--muted); font-size:16px; }
+.recipe-person-choice.is-selected .recipe-select-mark { border-color:var(--violet); background:var(--violet); color:#fff; }
 
 /* Liste discrète des produits non vendus par le magasin actif. */
 .hidden-ingredients { width: max-content; max-width: 100%; margin: -8px 0 14px auto; color: var(--muted); font-size: 12px; }
