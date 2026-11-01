@@ -432,8 +432,7 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 .list-empty-message { margin: 18px 0; color: var(--muted); font-size: 14px; }
 .active-list-category { margin: 3px 0 10px; padding: 0 12px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
 .active-list-category + .active-list-category { border-top: 1px solid var(--line); padding-top: 5px; }
-.active-list-category .shopping-row:first-child { border-top: 0; }
-.active-list-category .shopping-row { touch-action: pan-y; cursor: grab; }
+.active-list-category .shopping-row { border-top: 0; touch-action: pan-y; cursor: grab; }
 .shopping-row.list-row-dragging { opacity: .48; background: #f3effb; outline: 1px dashed var(--violet); }
 .empty-categories { margin: 18px 0 5px; border-top: 1px solid var(--line); padding-top: 12px; }
 .empty-categories summary { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 14px; cursor: pointer; list-style: none; }
@@ -475,3 +474,10 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 .manual-ingredient-name { min-width: 0; overflow-wrap: anywhere; }
 .manual-ingredient-row > input[type="number"], .manual-ingredient-row > select { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 7px 5px; background: var(--bg); color: var(--ink); font: inherit; }
 @media (max-width: 380px) { .manual-ingredient-row { grid-template-columns: 24px minmax(0, 1fr) 58px 58px; gap: 5px; font-size: 13px; } }
+
+/* Saisie permanente du catalogue et lien discret pour passer le calendrier. */
+.category-ingredient-form.inline-form { display: flex; margin-top: 10px; }
+.category-ingredient-form input { flex: 1; width: 100%; }
+.calendar-skip-wrap { display: flex; justify-content: flex-end; margin: -5px 0 8px; }
+.calendar-skip { padding: 3px 0; border: 0; background: transparent; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; opacity: .75; }
+.calendar-skip:hover, .calendar-skip:focus-visible { opacity: 1; }
