@@ -139,3 +139,29 @@ body.workflow-active #tabbar { display: none; }
 #choice-modal .modal-card { padding-top: 56px; }
 #home-modal .modal-card { padding-top: 54px; }
 @media (min-width: 760px) { .workflow-actions { left: 50%; right: auto; width: min(720px,100%); transform: translateX(-50%); padding-inline: 20px; } }
+
+/* Compteurs de recettes, planning hebdomadaire et actions fixées sur iPhone. */
+.recipe-choice-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; padding:7px 2px; border-top:1px solid var(--line); font-size:14px; }
+.recipe-counter { display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.recipe-counter button { width:34px; height:34px; border:1px solid color-mix(in srgb,var(--blue) 65%,white); border-radius:10px; background:color-mix(in srgb,var(--blue) 18%,white); color:#167da6; font-size:19px; font-weight:750; }
+.recipe-counter b { min-width:18px; text-align:center; font-variant-numeric:tabular-nums; }
+.week-date { position:sticky; top:62px; z-index:4; margin:0 -20px 14px; padding:15px 22px; background:color-mix(in srgb,var(--blue) 18%,white); border-block:1px solid var(--line); }
+.week-date p { margin:0; color:#167da6; font-size:18px; font-weight:750; text-transform:capitalize; }
+.week-recipe, .review-row { display:grid; grid-template-columns:28px 1fr auto; align-items:center; gap:10px; padding:12px 0; border-top:1px solid var(--line); cursor:pointer; }
+.week-recipe input, .review-row input { width:20px; height:20px; accent-color:var(--violet); }
+.week-recipe span { display:flex; flex-direction:column; gap:4px; }
+.week-recipe span b { font-size:15px; }
+.week-recipe span>small { color:var(--muted); font-size:12px; line-height:1.4; }
+.week-recipe b small { color:var(--violet); font-size:12px; }
+.week-recipe.checked b { text-decoration:line-through; color:var(--muted); }
+.review-row { grid-template-columns:28px 1fr auto; }
+.review-row span { font-size:14px; }
+.review-row input:not(:checked)+span { color:var(--muted); text-decoration:line-through; }
+.review-row small { color:var(--muted); }
+#category-picker { padding-bottom:24px; }
+body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-bottom)); }
+.category-picker-actions { position:fixed; z-index:7; left:0; right:0; bottom:calc(68px + env(safe-area-inset-bottom)); margin:0; padding:12px max(20px,env(safe-area-inset-left)); background:color-mix(in srgb,white 94%,transparent); border-top:1px solid var(--line); backdrop-filter:blur(16px); }
+.category-picker-actions .button { min-height:48px; }
+@media (min-width:760px) { .category-picker-actions { left:50%; right:auto; width:min(720px,100%); transform:translateX(-50%); padding-inline:20px; } }
+
+#tabbar button { flex:1; min-width:0; padding-inline:2px; }
