@@ -467,3 +467,11 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 .category-ingredient-form[hidden] { display: none !important; }
 
 .category-picker-actions { bottom: 0; }
+
+/* Sélecteur manuel : ligne catalogue avec quantité/unité facultatives. */
+.manual-tags { display: block; }
+.manual-ingredient-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 70px 68px; align-items: center; gap: 7px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.manual-ingredient-row > input[type="checkbox"] { accent-color: var(--violet); width: 20px; height: 20px; margin: 0; }
+.manual-ingredient-name { min-width: 0; overflow-wrap: anywhere; }
+.manual-ingredient-row > input[type="number"], .manual-ingredient-row > select { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 7px 5px; background: var(--bg); color: var(--ink); font: inherit; }
+@media (max-width: 380px) { .manual-ingredient-row { grid-template-columns: 24px minmax(0, 1fr) 58px 58px; gap: 5px; font-size: 13px; } }
