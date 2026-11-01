@@ -7,7 +7,7 @@
     'Auchan Balma':['Sodas & alcools','Épicerie sucrée','Produits secs','Frais','Viandes & poissons','Fruits et légumes','Rayon asiatique',"Produits d'entretien",'Hygiène','Rayon BIO','Surgelés'],
     'Intermarché':['Fruits et légumes','Sodas & alcools','Viandes & poissons','Frais','Surgelés','Hygiène',"Produits d'entretien",'Épicerie sucrée','Rayon asiatique','Produits secs'],
     'Épicerie asiatique':['Sauce','Autres'],
-    'Pharmacie Lafayette':['Hygiène','Autres']
+    'Pharmacie Lafayette':['Hygiène','Autres produits']
   };
   const CSV_COLUMNS = ['recette','moment','ingredient','quantite','unite','categorie','ordre'];
   const SERVINGS_COLUMN = 'repas';
@@ -27,7 +27,7 @@
   const itemCategoryIds = item => splitCategories(item?.categories?.length?item.categories:item?.category);
   const showEmptyStoreCategories = store => ['Épicerie asiatique','Pharmacie Lafayette'].includes(store);
   function preferredStoreCategory(ids,categories,store=activeStore){const available=splitCategories(ids);const wanted=STORE_FILTERS[store]||[];for(const label of wanted){const hit=available.find(id=>{const cat=categories.find(c=>c.id===id)||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(id));return cat&&storeCategoryKey(cat.name)===storeCategoryKey(label);});if(hit)return (categories.find(c=>c.id===hit)||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(hit)))?.id||hit;}return available[0]||'';}
-  function resolvedItemCategory(item,store=activeStore){return preferredStoreCategory(itemCategoryIds(item),state.categories,store)||item?.category||'';}
+  function resolvedItemCategory(item,store=activeStore){const available=itemCategoryIds(item),wanted=STORE_FILTERS[store]||[];for(const label of wanted){const hit=available.find(id=>{const cat=state.categories.find(c=>c.id===id)||state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(id));return cat&&storeCategoryKey(cat.name)===storeCategoryKey(label);});if(hit)return (state.categories.find(c=>c.id===hit)||state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(hit)))?.id||hit;}return '';}
   const uid = () => (globalThis.crypto?.randomUUID?.() || `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
   const qtyNum = value => { const s=String(value ?? '').trim().replace(',','.'); return s && Number.isFinite(Number(s)) ? Number(s) : null; };
   const fmt = n => Number(n.toFixed(2)).toLocaleString('fr-FR',{maximumFractionDigits:2});
@@ -143,7 +143,43 @@
   function storeCategoryLabel(cat,store=activeStore){return (STORE_FILTERS[store]||[]).find(label=>storeCategoryKey(label)===storeCategoryKey(cat.name))||cat.name;}
   function saveStoreOrders(){try{localStorage.setItem('courses-category-orders-v1',JSON.stringify(storeCategoryOrders));}catch{}}
   function storeFilterControl(){return `<label class="store-filter"><span>Magasin</span><select data-store-filter aria-label="Filtrer par magasin">${Object.keys(STORE_FILTERS).map(name=>`<option value="${esc(name)}" ${name===activeStore?'selected':''}>${esc(name)}</option>`).join('')}</select></label>`;}
-  async function load(){[state.recipes,state.categories,state.pdfs,state.list]=await Promise.all(['recipes','categories','pdfs','list'].map(all));if(!state.categories.length){state.categories=DEFAULT_CATEGORIES.map((name,order)=>({id:uid(),name,order,ingredients:[]}));}for(const name of ['Sauce','Autres'])if(!state.categories.some(c=>norm(c.name)===norm(name)))state.categories.push({id:uid(),name,order:state.categories.length,ingredients:[]});state.categories.sort((a,b)=>a.order-b.order);let migrated=false;const sauceCategory=state.categories.find(c=>norm(c.name)==='sauce'),rayonCategory=state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey('Rayon asiatique'));state.recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{const ids=splitCategories(i.categories?.length?i.categories:i.category);if(!Array.isArray(i.categories)||!Array.isArray(i.category)){i.categories=ids;i.category=ids[0]||'';migrated=true;}if(norm(i.name)==='sauce soja salee'){for(const cat of [rayonCategory,sauceCategory].filter(Boolean)){if(!i.categories.includes(cat.id)){i.categories.push(cat.id);migrated=true;}if(!isIngredientSuppressed(suppressedIngredients,cat.name,i.name)&&!cat.ingredients.some(x=>norm(x)===norm(i.name)))cat.ingredients.push(i.name);}}}));state.list.forEach(i=>{if(!Array.isArray(i.categories)){i.categories=splitCategories(i.category);migrated=true;}});await Promise.all([replaceStore('categories',state.categories),migrated?replaceStore('recipes',state.recipes):Promise.resolve(),migrated?replaceStore('list',state.list):Promise.resolve()]);}
+  async function load(){
+    [state.recipes,state.categories,state.pdfs,state.list]=await Promise.all(['recipes','categories','pdfs','list'].map(all));
+    if(!state.categories.length)state.categories=DEFAULT_CATEGORIES.map((name,order)=>({id:uid(),name,order,ingredients:[]}));
+    for(const name of ['Sauce','Autres','Autres produits'])if(!state.categories.some(c=>norm(c.name)===norm(name)))state.categories.push({id:uid(),name,order:state.categories.length,ingredients:[]});
+    state.categories.sort((a,b)=>a.order-b.order);
+    let recipesMigrated=false,listMigrated=false;
+    const categoryByName=name=>state.categories.find(c=>norm(c.name)===norm(name));
+    const legacyOther=categoryByName('Autres'),pharmacyOther=categoryByName('Autres produits');
+    // L’ancien « Autres » était partagé : copier son catalogue sans le renommer ni le vider.
+    if(legacyOther&&pharmacyOther&&!pharmacyOther.legacyOtherCopied){
+      legacyOther.ingredients.forEach(name=>{if(!pharmacyOther.ingredients.some(x=>norm(x)===norm(name)))pharmacyOther.ingredients.push(name);});
+      pharmacyOther.legacyOtherCopied=true;
+    }
+    const migratePharmacyMembership=(item,storeType)=>{
+      const ids=itemCategoryIds(item),hasLegacyOther=ids.some(id=>id===legacyOther?.id||norm(state.categories.find(c=>c.id===id)?.name||id)==='autres');
+      // Dupliquer l’association vers la nouvelle catégorie, sans retirer « Autres » (Épicerie asiatique).
+      if(hasLegacyOther&&pharmacyOther&&!ids.includes(pharmacyOther.id)){
+        ids.push(pharmacyOther.id);item.categories=ids;
+        if(storeType==='recipes')recipesMigrated=true;else listMigrated=true;
+      }
+    };
+    const sauceCategory=categoryByName('Sauce'),rayonCategory=state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey('Rayon asiatique'));
+    state.recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{
+      const ids=splitCategories(i.categories?.length?i.categories:i.category);
+      if(!Array.isArray(i.categories)||!Array.isArray(i.category)){i.categories=ids;i.category=ids[0]||'';recipesMigrated=true;}
+      migratePharmacyMembership(i,'recipes');
+      if(norm(i.name)==='sauce soja salee')for(const cat of [rayonCategory,sauceCategory].filter(Boolean)){
+        if(!i.categories.includes(cat.id)){i.categories.push(cat.id);recipesMigrated=true;}
+        if(!isIngredientSuppressed(suppressedIngredients,cat.name,i.name)&&!cat.ingredients.some(x=>norm(x)===norm(i.name)))cat.ingredients.push(i.name);
+      }
+    }));
+    state.list.forEach(i=>{
+      if(!Array.isArray(i.categories)){i.categories=splitCategories(i.category);listMigrated=true;}
+      migratePharmacyMembership(i,'list');
+    });
+    await Promise.all([replaceStore('categories',state.categories),recipesMigrated?replaceStore('recipes',state.recipes):Promise.resolve(),listMigrated?replaceStore('list',state.list):Promise.resolve()]);
+  }
   function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),3000);}
   function ingredientFieldKind(input){const form=input?.form;return form?.dataset.form==='catalog'?'catalog':form?.dataset.form==='list-add'||form?.dataset.form==='manual-add'?'lowercase':null;}
   function ingredientFieldValid(kind,value){return kind==='catalog'?isCatalogIngredientValid(value):!hasUppercaseLetter(value);}
@@ -162,13 +198,12 @@
     let body=''; const activeCats=new Set(),visible=storeCategories(),visibleIds=new Set(visible.map(c=>c.id));
     const renderRows=(id,items,title,showEmpty=false)=>{if(!items.length&&!showEmpty)return '';activeCats.add(id);return `<section class="list-group active-list-category" data-list-category="${esc(id)}"><h2 class="list-group-title">${esc(title||(state.categories.find(c=>c.id===id)?storeCategoryLabel(state.categories.find(c=>c.id===id)):categoryName(id)))}</h2>${items.map(i=>`<div class="shopping-row ${i.checked?'checked':''}" data-list-item="${esc(i.id)}" data-category="${esc(id)}"><input type="checkbox" data-action="toggle" data-id="${esc(i.id)}" ${i.checked?'checked':''} aria-label="Cocher ${esc(i.name)}"><span>${esc(i.name)}</span><small>${esc(displayQty(i))}</small></div>`).join('')}</section>`;};
     const forceEmpty=showEmptyStoreCategories(activeStore);
-    visible.forEach(cat=>body+=renderRows(cat.id,state.list.filter(i=>resolvedItemCategory(i)===cat.id),storeCategoryLabel(cat),forceEmpty));
-    // Les catégories masquées par un filtre spécialisé restent visibles après les rayons actifs.
-    state.categories.filter(c=>!visibleIds.has(c.id)).forEach(cat=>body+=renderRows(cat.id,state.list.filter(i=>resolvedItemCategory(i)===cat.id),storeCategoryLabel(cat)));
-    const unknownIds=[...new Set(state.list.map(resolvedItemCategory).filter(id=>id&&!state.categories.some(c=>c.id===id)))];unknownIds.forEach(id=>body+=renderRows(id,state.list.filter(i=>resolvedItemCategory(i)===id),id));
-    const uncategorized=state.list.filter(i=>!resolvedItemCategory(i));if(uncategorized.length)body+=renderRows('__other__',uncategorized,'Autres');
-    const empties=[...visible,...state.categories.filter(c=>!visibleIds.has(c.id))].filter(c=>!activeCats.has(c.id));
-    if(empties.length)body+=`<details class="empty-categories"><summary>Catégories vides</summary><div class="empty-category-list">${empties.map(c=>`<div class="empty-category-name">${esc(c.name)}</div>`).join('')}</div></details>`;
+    let visibleItemCount=0;
+    visible.forEach(cat=>{const items=state.list.filter(i=>resolvedItemCategory(i)===cat.id);visibleItemCount+=items.length;if(items.length)body+=renderRows(cat.id,items,storeCategoryLabel(cat));});
+    const empties=visible.filter(c=>!activeCats.has(c.id));
+    if(forceEmpty)empties.forEach(cat=>body+=renderRows(cat.id,[],storeCategoryLabel(cat),true));
+    else if(empties.length)body+=`<details class="empty-categories"><summary>Catégories vides</summary><div class="empty-category-list">${empties.map(c=>`<div class="empty-category-name">${esc(storeCategoryLabel(c))}</div>`).join('')}</div></details>`;
+    if(state.list.length&&visibleItemCount===0)body+=`<p class="list-empty-message">Aucun article dans ce magasin</p>`;
     const content=`${storeFilterControl()}${state.list.length?`<div class="list-actions"><div class="list-workflows">${button('start-recipes','Depuis mes recettes','workflow-recipes')}${button('start-manual','Manuellement','workflow-manual')}</div>${button('reset','Supprimer la liste','danger')}</div>${body}`:`<div class="list-workflows list-workflows-empty">${button('start-recipes','Depuis mes recettes','workflow-recipes')}${button('start-manual','Manuellement','workflow-manual')}</div><p class="list-empty-message">Aucune liste pour le moment</p>${forceEmpty?body:''}`}`;
     page('Courses','VOTRE LISTE',content,scrollPosition);
   }
