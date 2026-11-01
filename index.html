@@ -14,17 +14,18 @@
   <title>Courses</title>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="#" aria-label="Courses, accueil">Courses<span>·</span></a><button id="home-button" class="home-button" aria-label="Ouvrir le menu">⌂</button></header>
+  <header class="topbar"><a class="brand" href="#" aria-label="Courses">Courses<span>·</span></a></header>
   <main id="view" aria-live="polite"></main>
   <nav id="tabbar" aria-label="Navigation principale">
     <button data-tab="import"><span>⇧</span>Importer</button>
     <button data-tab="cats"><span>☷</span>Catégories</button>
     <button data-tab="pdf"><span>▤</span>Fiches</button>
-    <button data-tab="list"><span>🛒</span>Courses</button>
+    <button data-tab="recipes"><span>◷</span>Recettes</button>
+    <button data-tab="list"><span class="tab-cart" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.4L22 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg></span>Courses</button>
   </nav>
   <div id="home-modal" class="modal" hidden><div class="modal-card"><h2>Faire la liste<br>de courses</h2><button class="choice choice-solid" data-action="home-generate">Composer ma liste <span>→</span></button><button class="choice choice-outline" data-action="home-open">Choisir manuellement <span>→</span></button></div></div>
-  <div id="choice-modal" class="modal" hidden><div class="modal-card"><button class="modal-close" data-action="home-close" aria-label="Fermer">×</button><h2>Comment la composer ?</h2><button class="choice choice-solid" data-action="choose-recipes">Par recettes <span>→</span></button><button class="choice choice-outline" data-action="choose-categories">Par catégories <span>→</span></button></div></div>
-  <div id="merge-modal" class="modal" hidden><div class="modal-card"><p class="eyebrow">LISTE EXISTANTE</p><h2>Ajouter ou remplacer ?</h2><p class="muted">Une liste de courses est déjà enregistrée.</p><button class="choice" data-action="merge-add">Ajouter à l’existante <span>＋</span></button><button class="choice secondary" data-action="merge-replace">Remplacer la liste <span>↻</span></button><button class="text-button" data-action="cancel-merge">Annuler</button></div></div>
+  <div id="choice-modal" class="modal" hidden><div class="modal-card"><button class="modal-close" data-action="home-close" aria-label="Fermer">×</button><h2 class="choice-modal-title">Comment<br>la composer</h2><button class="choice choice-solid" data-action="choose-recipes">Par recettes <span>→</span></button><button class="choice choice-outline" data-action="choose-categories">Par catégories <span>→</span></button></div></div>
+  <div id="merge-modal" class="modal" hidden><div class="modal-card"><h2>Ajouter ou remplacer ?</h2><button class="choice" data-action="merge-add">Ajouter à l’existante <span>＋</span></button><button class="choice secondary" data-action="merge-replace">Remplacer la liste <span>↻</span></button><button class="text-button" data-action="cancel-merge">Annuler</button></div></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="app.js" defer></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"8607d2a720d14b038279025b2b5a82e5","spa":2}' crossorigin="anonymous"></script>
