@@ -270,7 +270,7 @@
     if(a==='delete-ingredient'){const cat=state.categories.find(c=>c.id===id),name=b.dataset.ingredient;if(cat&&name&&cat.ingredients.some(x=>norm(x)===norm(name))){const scrollPosition=saveWindowScroll();cat.ingredients=cat.ingredients.filter(x=>norm(x)!==norm(name));suppressedIngredients[ingredientKey(cat.name,name)]=true;suppressedIngredients[ingredientKey(cat.id,name)]=true;saveSuppressedIngredients();await put('categories',cat);renderCategories(scrollPosition);say('Ingrédient retiré du catalogue.');}return;}
     if(a==='toggle'){const item=state.list.find(x=>x.id===id);if(item){item.checked=b.checked;b.closest('.shopping-row')?.classList.toggle('checked',item.checked);await put('list',item);}return;}
     if(a==='toggle-list-add'){return;}
-    if(a==='toggle-manual-add'){const form=b.closest('.manual-category')?.querySelector('.manual-add-form');if(form){form.hidden=!form.hidden;if(!form.hidden)requestAnimationFrame(()=>form.querySelector('input')?.focus());}return;}
+    if(a==='toggle-manual-add'){const form=b.closest('.manual-category')?.querySelector('.manual-add-form');if(form){form.hidden=!form.hidden;if(!form.hidden)form.querySelector('input')?.focus();}return;}
     if(a==='reset'){if(confirm('Supprimer la liste de courses ?')){state.list=[];await replaceStore('list',[]);renderList();say('Liste réinitialisée.');}return;}
     if(a==='month'){monthCursor.setMonth(monthCursor.getMonth()+Number(b.dataset.delta));renderCalendar();return;}
     if(a==='day'){const date=b.dataset.date;if(!days.has(date))days.set(date,{midi:false,soir:false});else{days.delete(date);cleanupMealPlan(date,'midi');cleanupMealPlan(date,'soir');}saveWeekPlan();renderCalendar();return;}
