@@ -165,3 +165,21 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 @media (min-width:760px) { .category-picker-actions { left:50%; right:auto; width:min(720px,100%); transform:translateX(-50%); padding-inline:20px; } }
 
 #tabbar button { flex:1; min-width:0; padding-inline:2px; }
+
+/* Révision 2026-11 : objectifs explicites et affichage allégé des catégories. */
+.sticky-count .goal-open { background: #8E6BD8; color: #fff; }
+.sticky-count .goal-met { background: #4A90E2; color: #fff; }
+.category-list.group { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; margin: 12px 0; }
+.category-list .category-card { background: color-mix(in srgb, var(--paper) 78%, var(--bg)); border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 16px 4px; margin: 0; }
+.category-list .category-card:first-child { border-top: 0; }
+.csv-help summary { color: var(--violet); font-weight: 700; padding: 5px 0 10px; cursor: pointer; }
+.recipes-empty { color: var(--muted); line-height: 1.6; padding: 22px 0; }
+.generated-week { margin: 0 0 30px; }
+.generated-week .week-date { margin-bottom: 8px; }
+.week-controls { display: flex; justify-content: flex-end; padding: 2px 0 8px; }
+.week-controls .text-button { color: var(--muted); font-size: 12px; }
+.week-controls.all-weeks { border-top: 1px solid var(--line); padding-top: 12px; }
+.week-moment { margin: 14px 0; }
+.week-moment h3 { margin: 0; padding: 7px 0; font-size: 14px; color: var(--violet); border-bottom: 1px solid var(--line); }
+.week-recipe { grid-template-columns: 28px 1fr; }
+.week-recipe span { display: block; }
