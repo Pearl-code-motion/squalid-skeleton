@@ -481,3 +481,6 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 .calendar-skip-wrap { display: flex; justify-content: flex-end; margin: -5px 0 8px; }
 .calendar-skip { padding: 3px 0; border: 0; background: transparent; color: var(--muted); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; opacity: .75; }
 .calendar-skip:hover, .calendar-skip:focus-visible { opacity: 1; }
+
+/* Validation discrète des champs d’ingrédients. */
+input.input-invalid { border-color: color-mix(in srgb, var(--danger) 65%, white) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 12%, transparent); }
