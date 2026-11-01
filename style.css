@@ -484,3 +484,11 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 
 /* Validation discrète des champs d’ingrédients. */
 input.input-invalid { border-color: color-mix(in srgb, var(--danger) 65%, white) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 12%, transparent); }
+
+/* Filtres de magasins : commandes compactes, partagées entre les vues catalogue et courses. */
+.store-filter { display:flex; align-items:center; justify-content:flex-end; gap:9px; margin:0 0 14px; color:var(--muted); font-size:12px; font-weight:650; }
+.store-filter select { max-width:min(68vw,280px); padding:8px 30px 8px 11px; border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--ink); font:inherit; font-weight:650; }
+.category-list .category-card[data-category-id] { cursor:grab; }
+.list-group-title { margin:0 0 4px !important; padding:6px 0 !important; border:0 !important; color:var(--violet); text-transform:none; }
+.meal-total { color:var(--ink); }
+.meal-total b { background:color-mix(in srgb,var(--violet) 13%,white); color:var(--violet); }
