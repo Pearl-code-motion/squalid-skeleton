@@ -400,3 +400,25 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 #choice-modal .modal-close { top: 64px; }
 #tabbar { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #manual-form .manual-form-actions { display: flex; flex-direction: row; gap: 10px; }
+
+/* Actions Courses : deux parcours côte à côte, ajout rapide par rayon. */
+.list-actions { align-items: center; }
+.list-workflows { display: flex; flex: 1 1 100%; gap: 8px; }
+.list-workflows .button { flex: 1 1 0; min-width: 0; }
+.list-workflows .workflow-recipes { background: var(--violet); border-color: var(--violet); color: #fff; }
+.list-workflows .workflow-manual { background: #fff; border-color: var(--violet); color: var(--violet); }
+.list-group-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.list-group-heading h2 { margin-bottom: 0; }
+.list-add-button, .category-add-button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 28px; height: 28px; min-width: 28px; padding: 0; border: 1px solid var(--violet); border-radius: 50%; background: #fff; color: var(--violet); font-size: 20px; line-height: 1; font-weight: 500; }
+.list-add-form { margin: 12px 0 2px; }
+.list-add-form[hidden] { display: none; }
+.list-add-form input { width: 100%; flex: 1; }
+.category-add-button::before { content: '+'; }
+.category-add-button { width: 30px; height: 30px; min-width: 30px; font-size: 22px; }
+.category-icon-btn, .category-icon-btn.delete-category { width: 26px; height: 26px; min-width: 26px; border-color: var(--violet); }
+.category-icon-btn.delete-category { color: var(--danger); }
+.week-date { background: #EDE7FA; border: 1px solid #EDE7FA; }
+.week-date p { color: #8E6BD8; }
+
+.empty-list-category { margin: 5px 0; padding: 9px 13px; }
+.empty-list-category .list-add-form { margin-bottom: 4px; }
