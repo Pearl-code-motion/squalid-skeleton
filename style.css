@@ -498,10 +498,8 @@ input.input-invalid { border-color: color-mix(in srgb, var(--danger) 65%, white)
 .recipes-header-action { display:flex; justify-content:flex-end; margin-top:12px; }
 .recipes-delete-all { flex:0 0 auto; white-space:nowrap; }
 .recipe-person-choice { width:100%; border:0; border-top:1px solid var(--line); background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-.recipe-person-choice.is-selected { color:var(--violet); font-weight:650; }
-.recipe-person-state { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
-.recipe-select-mark { display:grid; place-items:center; width:28px; height:28px; border:1px solid var(--line); border-radius:50%; color:var(--muted); font-size:16px; }
-.recipe-person-choice.is-selected .recipe-select-mark { border-color:var(--violet); background:var(--violet); color:#fff; }
+.recipe-choice-name.has-quantity { font-weight:650; }
+.unit-note { margin:-4px 0 12px; color:var(--muted); font-size:12px; }
 
 /* Liste discrète des produits non vendus par le magasin actif. */
 .hidden-ingredients { width: max-content; max-width: 100%; margin: -8px 0 14px auto; color: var(--muted); font-size: 12px; }
