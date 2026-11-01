@@ -462,7 +462,8 @@ body.has-manual-picker #view { padding-bottom:calc(178px + env(safe-area-inset-b
 #view[data-page="recettes"] .week-moment h3 { color: #9A7DDD; }
 .category-ingredient-form[hidden] { display: none !important; }
 
-.category-picker-actions { bottom: 0; }
+.category-picker-actions { bottom: 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+body.manual-keyboard-open .category-picker-actions { display: none; }
 
 /* Sélecteur manuel : ligne catalogue avec quantité/unité facultatives. */
 .manual-tags { display: block; }
