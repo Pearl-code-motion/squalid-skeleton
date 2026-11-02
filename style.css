@@ -515,3 +515,15 @@ input.input-invalid { border-color: color-mix(in srgb, var(--danger) 65%, white)
 .week-recipe-entry .week-recipe { flex:1; min-width:0; border-top:0; }
 .week-recipe-delete { flex:0 0 auto; width:32px; height:32px; border:0; border-radius:50%; background:transparent; color:var(--muted); font-size:21px; cursor:pointer; }
 .week-recipe-delete:hover, .week-recipe-delete:focus-visible { background:color-mix(in srgb,var(--danger) 10%,white); color:var(--danger); }
+
+
+/* iPhone : empêcher le double-tap zoom et le zoom automatique au focus. */
+html, body, * { touch-action: manipulation; }
+input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px !important; }
+.button.primary:disabled, .workflow-actions .button.primary:disabled { background: #E5E5EA !important; border-color: #C7C7CC !important; color: #8E8E93 !important; cursor: not-allowed; opacity: 1; }
+.recipe-choice-name { font-weight: 400; }
+.week-recipe { font-weight: 400; }
+.quick-add-form { margin: 8px 0 10px; }
+.app-version { margin: 20px 2px 4px; color: #9a99a0; font-size: 10px; font-weight: 400; text-align: center; }
+.review-row.review-dragging { background: color-mix(in srgb, var(--violet) 9%, white); border-radius: 8px; }
+.review-list.review-selecting { touch-action: none; user-select: none; }
