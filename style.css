@@ -528,7 +528,7 @@ input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 
 .review-row.review-dragging { background: color-mix(in srgb, var(--violet) 9%, white); border-radius: 8px; }
 
 /* Barre de saisie manuelle : toujours accessible, sans titre ni état vide. */
-.quick-entry-bar { position: sticky; top: 62px; z-index: 7; margin: -18px -20px 12px; padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--line); }
+.quick-entry-bar { position: sticky; top: 62px; z-index: 7; margin: 14px -20px 12px; padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--line); }
 .quick-entry-bar input { display:block; width:100%; min-height:46px; padding:11px 14px; border:1px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); font:inherit; font-size:16px !important; -webkit-appearance:none; appearance:none; }
 .quick-entry-bar input::-webkit-search-cancel-button, input[type="search"]::-webkit-search-cancel-button { -webkit-appearance:none; appearance:none; display:none; }
 .quick-entry-bar input:focus { border-color:var(--violet); }

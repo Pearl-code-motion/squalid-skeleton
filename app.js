@@ -11,7 +11,7 @@
   };
   const CSV_COLUMNS = ['recette','moment','ingredient','quantite','unite','categorie','ordre'];
   const SERVINGS_COLUMN = 'repas';
-  const APP_VERSION = 34;
+  const APP_VERSION = 35;
   const MARGIN = 80;
   let recipeGroupOpen = {};
   let quickIngredients = [];
@@ -218,7 +218,7 @@
     const renderRows=(id,items,title,showEmpty=false)=>{if(!items.length&&!showEmpty)return '';activeCats.add(id);return `<section class="list-group active-list-category" data-list-category="${esc(id)}"><h2 class="list-group-title">${esc(title||(state.categories.find(c=>c.id===id)?storeCategoryLabel(state.categories.find(c=>c.id===id)):categoryName(id)))}</h2>${items.map(i=>`<div class="shopping-row ${i.checked?'checked':''}" data-list-item="${esc(i.id)}" data-category="${esc(id)}"><input type="checkbox" data-action="toggle" data-id="${esc(i.id)}" ${i.checked?'checked':''} aria-label="Cocher ${esc(i.name)}"><span>${esc(i.name)}</span><small>${esc(displayQty(i))}</small></div>`).join('')}</section>`;};
     const forceEmpty=showEmptyStoreCategories(activeStore);
     let visibleItemCount=0;
-    const quickItems=state.list.filter(i=>itemCategoryIds(i).includes('__quick__'));visibleItemCount+=quickItems.length;body+=renderRows('__quick__',quickItems,'Saisie rapide',true);
+    const quickItems=state.list.filter(i=>itemCategoryIds(i).includes('__quick__'));visibleItemCount+=quickItems.length;body+=renderRows('__quick__',quickItems,'Saisie rapide');
     visible.forEach(cat=>{const items=state.list.filter(i=>!itemCategoryIds(i).includes('__quick__')&&resolvedItemCategory(i)===cat.id);visibleItemCount+=items.length;if(items.length)body+=renderRows(cat.id,items,storeCategoryLabel(cat));});
     const empties=visible.filter(c=>!activeCats.has(c.id));
     if(forceEmpty)empties.forEach(cat=>body+=renderRows(cat.id,[],storeCategoryLabel(cat),true));
