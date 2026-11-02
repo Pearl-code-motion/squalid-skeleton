@@ -11,7 +11,8 @@
   };
   const CSV_COLUMNS = ['recette','moment','ingredient','quantite','unite','categorie','ordre'];
   const SERVINGS_COLUMN = 'repas';
-  const APP_VERSION = 33;
+  const APP_VERSION = 34;
+  const MARGIN = 80;
   let recipeGroupOpen = {};
   let quickIngredients = [];
   const MOMENTS = ['matin','midi','gouter','soir'];
@@ -270,7 +271,9 @@
         if((overflow==='auto'||overflow==='scroll')&&node.scrollHeight>node.clientHeight){scroller=node;break;}
       }
     }
+    cancelAnimationFrame(manualScrollAnimation);
     const start=scroller.scrollTop;
+    if(!target&&start<MARGIN)return;
     let destination=0;
     if(target){
       const targetRect=target.getBoundingClientRect();
@@ -279,6 +282,10 @@
       const topBar=document.querySelector('.topbar');
       const stickyBottom=Math.max(quickBar?.getBoundingClientRect().bottom||0,topBar?.getBoundingClientRect().bottom||0);
       const stickyOffset=Math.max(0,stickyBottom-scrollerTop);
+      const viewportBottom=scroller===root?window.innerHeight:scroller.getBoundingClientRect().top+scroller.clientTop+scroller.clientHeight;
+      const comfortableTop=Math.max(scrollerTop,stickyBottom)+MARGIN;
+      const comfortableBottom=viewportBottom-MARGIN;
+      if(targetRect.top>=comfortableTop&&targetRect.bottom<=comfortableBottom)return;
       destination=start+targetRect.top-scrollerTop-stickyOffset-14;
       destination=Math.max(0,Math.min(destination,scroller.scrollHeight-scroller.clientHeight));
     }
