@@ -11,7 +11,7 @@
   };
   const CSV_COLUMNS = ['recette','moment','ingredient','quantite','unite','categorie','ordre'];
   const SERVINGS_COLUMN = 'repas';
-  const APP_VERSION = 32;
+  const APP_VERSION = 33;
   let recipeGroupOpen = {};
   let quickIngredients = [];
   const MOMENTS = ['matin','midi','gouter','soir'];
@@ -259,10 +259,44 @@
   function manualIngredientRow(category,name,checked=false){const key=`${category}|${name}`;return `<div class="manual-ingredient-row"><input type="checkbox" data-pick="${esc(key)}" ${checked?'checked':''} aria-label="Sélectionner ${esc(name)}"><span class="manual-ingredient-name" data-check-label>${esc(name)}</span><input type="number" min="0" step="any" inputmode="decimal" placeholder="Qté" data-pick-qty="${esc(key)}" aria-label="Quantité pour ${esc(name)}"><select data-pick-unit="${esc(key)}" aria-label="Unité pour ${esc(name)}"><option value="">—</option>${UNITES.filter(Boolean).map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('')}</select></div>`;}
   let manualViewportBase=0;
   function syncManualKeyboardState(){const active=workflow?.screen==='manual'&&document.body.classList.contains('workflow-active'),focused=active&&document.activeElement?.matches('.manual-add-form input,[data-quick-entry]'),viewport=window.visualViewport,short=active&&viewport&&manualViewportBase>0&&viewport.height<manualViewportBase-120;document.body.classList.toggle('manual-keyboard-open',!!(focused||short));}
+  let manualScrollAnimation=0;
+  function animateManualScroll(target){
+    const root=document.scrollingElement;
+    if(!root)return;
+    let scroller=root;
+    if(target){
+      for(let node=target.parentElement;node&&node!==document.body&&node!==document.documentElement;node=node.parentElement){
+        const overflow=getComputedStyle(node).overflowY;
+        if((overflow==='auto'||overflow==='scroll')&&node.scrollHeight>node.clientHeight){scroller=node;break;}
+      }
+    }
+    const start=scroller.scrollTop;
+    let destination=0;
+    if(target){
+      const targetRect=target.getBoundingClientRect();
+      const scrollerTop=scroller===root?0:scroller.getBoundingClientRect().top+scroller.clientTop;
+      const quickBar=document.querySelector('.quick-entry-bar');
+      const topBar=document.querySelector('.topbar');
+      const stickyBottom=Math.max(quickBar?.getBoundingClientRect().bottom||0,topBar?.getBoundingClientRect().bottom||0);
+      const stickyOffset=Math.max(0,stickyBottom-scrollerTop);
+      destination=start+targetRect.top-scrollerTop-stickyOffset-14;
+      destination=Math.max(0,Math.min(destination,scroller.scrollHeight-scroller.clientHeight));
+    }
+    cancelAnimationFrame(manualScrollAnimation);
+    const began=performance.now(),duration=700,delta=destination-start;
+    if(Math.abs(delta)<1)return;
+    const step=now=>{
+      const progress=Math.min(1,(now-began)/duration);
+      const eased=progress<.5?4*progress*progress*progress:1-Math.pow(-2*progress+2,3)/2;
+      scroller.scrollTop=start+delta*eased;
+      if(progress<1)manualScrollAnimation=requestAnimationFrame(step);
+    };
+    manualScrollAnimation=requestAnimationFrame(step);
+  }
   function syncQuickIngredients(){document.querySelectorAll('[data-quick-qty]').forEach(input=>{const item=quickIngredients.find(x=>x.id===input.dataset.quickQty);if(item){item.quantity=input.value;item.unit=document.querySelector(`[data-quick-unit="${CSS.escape(item.id)}"]`)?.value||'';item.checked=document.querySelector(`[data-pick="${CSS.escape(`__quick__|${item.id}`)}"]`)?.checked??item.checked;}});}
   function categoryPicker(){workflow={screen:'manual'};manualViewportBase=window.visualViewport?.height||window.innerHeight;const quickRows=quickIngredients.map(x=>`<div class="manual-ingredient-row"><input type="checkbox" data-pick="__quick__|${esc(x.id)}" ${x.checked?'checked':''} aria-label="Sélectionner ${esc(x.name)}"><span class="manual-ingredient-name" data-check-label>${esc(x.name)}</span><input type="number" min="0" step="any" inputmode="decimal" placeholder="Qté" value="${esc(x.quantity)}" data-quick-qty="${esc(x.id)}" aria-label="Quantité pour ${esc(x.name)}"><select data-quick-unit="${esc(x.id)}" aria-label="Unité pour ${esc(x.name)}"><option value="">—</option>${UNITES.filter(Boolean).map(u=>`<option value="${esc(u)}" ${x.unit===u?'selected':''}>${esc(u)}</option>`).join('')}</select></div>`).join('');const quick=`<div class="quick-entry-bar"><input type="search" data-quick-entry placeholder="Ajouter un ingrédient" aria-label="Saisie rapide" enterkeyhint="done"></div>${quickRows?`<section class="group manual-category quick-category" data-manual-category="__quick__"><div class="manual-tags">${quickRows}</div></section>`:''}`;const groups=storeCategories().map(c=>`<section class="group manual-category" data-manual-category="${esc(c.id)}"><div class="manual-category-head"><h2>${esc(storeCategoryLabel(c))}</h2><button type="button" class="manual-add-toggle" data-action="toggle-manual-add" data-id="${esc(c.id)}" aria-label="Ajouter un ingrédient dans ${esc(c.name)}">+</button></div><div class="manual-tags">${c.ingredients.map(name=>manualIngredientRow(c.id,name)).join('')||'<p class="muted manual-no-tags">Aucun ingrédient enregistré.</p>'}</div><div class="inline-form manual-add-form" data-form="manual-add" data-id="${esc(c.id)}" hidden><input name="name" placeholder="Ajouter un ingrédient" aria-label="Ajouter un ingrédient dans ${esc(c.name)}" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off"></div></section>`).join('');page('Choisir manuellement','COMPOSER LA LISTE',`${storeFilterControl()}<div id="category-picker">${quick}${groups}</div><div class="form-actions category-picker-actions">${button('category-ok','Ajouter à la liste','primary')}</div>`);}
 
-  async function processQuickEntry(input){syncQuickIngredients();const name=input.value.trim();if(!name)return;if(hasUppercaseLetter(name)){rejectField(input,'Veuillez saisir l’ingrédient en minuscules.');return;}const cat=storeCategories().find(c=>c.ingredients.some(x=>norm(x)===norm(name)&&!isSuppressedCatalogIngredient(c.id,x)));if(cat){const actual=cat.ingredients.find(x=>norm(x)===norm(name));let checkbox=document.querySelector(`[data-pick="${CSS.escape(`${cat.id}|${actual}`)}"]`);if(!checkbox){const section=document.querySelector(`[data-manual-category="${CSS.escape(cat.id)}"]`),tags=section?.querySelector('.manual-tags');if(tags){tags.querySelector('.manual-no-tags')?.remove();tags.insertAdjacentHTML('beforeend',manualIngredientRow(cat.id,actual));checkbox=tags.querySelector(`[data-pick="${CSS.escape(`${cat.id}|${actual}`)}"]`);}}if(checkbox){const details=checkbox.closest('details');if(details&&!details.open)details.open=true;checkbox.checked=true;requestAnimationFrame(()=>checkbox.closest('.manual-ingredient-row')?.scrollIntoView({behavior:'smooth',block:'center'}));}input.value='';input.blur();syncManualKeyboardState();return;}quickIngredients.push({id:uid(),name,quantity:'',unit:'',checked:true});input.value='';categoryPicker();requestAnimationFrame(()=>{window.scrollTo({left:0,top:0,behavior:'smooth'});const root=document.scrollingElement;if(root)root.scrollTop=0;});}
+  async function processQuickEntry(input){syncQuickIngredients();const name=input.value.trim();if(!name)return;if(hasUppercaseLetter(name)){rejectField(input,'Veuillez saisir l’ingrédient en minuscules.');return;}const cat=storeCategories().find(c=>c.ingredients.some(x=>norm(x)===norm(name)&&!isSuppressedCatalogIngredient(c.id,x)));if(cat){const actual=cat.ingredients.find(x=>norm(x)===norm(name));let checkbox=document.querySelector(`[data-pick="${CSS.escape(`${cat.id}|${actual}`)}"]`);if(!checkbox){const section=document.querySelector(`[data-manual-category="${CSS.escape(cat.id)}"]`),tags=section?.querySelector('.manual-tags');if(tags){tags.querySelector('.manual-no-tags')?.remove();tags.insertAdjacentHTML('beforeend',manualIngredientRow(cat.id,actual));checkbox=tags.querySelector(`[data-pick="${CSS.escape(`${cat.id}|${actual}`)}"]`);}}if(checkbox){const details=checkbox.closest('details');if(details&&!details.open)details.open=true;checkbox.checked=true;requestAnimationFrame(()=>animateManualScroll(checkbox.closest('.manual-ingredient-row')));}input.value='';input.blur();syncManualKeyboardState();return;}quickIngredients.push({id:uid(),name,quantity:'',unit:'',checked:true});input.value='';categoryPicker();requestAnimationFrame(()=>animateManualScroll(null));}
   document.addEventListener('keydown',e=>{const input=e.target.closest('[data-quick-entry]');if(input&&e.key==='Enter'){e.preventDefault();processQuickEntry(input);return;}const field=e.target.closest('[data-form="catalog"] input,[data-form="manual-add"] input,[data-form="new-cat"] input');if(field&&e.key==='Enter'){e.preventDefault();field.closest('[data-form]')?.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));}});
   async function afterImport(text){const result=validateCSV(text);if(result.errors.length){say(`Import annulé — ${result.errors[0]}`);return;}let added=0,updated=0,unchanged=0;const next=[...state.recipes];
     // Un import CSV valide réinitialise les suppressions manuelles du catalogue.
