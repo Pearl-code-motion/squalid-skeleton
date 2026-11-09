@@ -535,3 +535,9 @@ body.manual-keyboard-open .quick-entry-bar { position: sticky; top: calc(env(saf
 .review-row { touch-action:pan-y; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 .review-row input, .review-row span, .review-row small { -webkit-user-select:none; user-select:none; }
 input[type="search"] { -webkit-appearance:none; appearance:none; }
+
+/* Disponibilité saisonnière : lien discret sous le sélecteur de magasin. */
+.seasonal-hidden { margin:-8px 0 14px; color:var(--muted); font-size:11px; text-align:right; }
+.seasonal-hidden summary { cursor:pointer; list-style:none; opacity:.82; }
+.seasonal-hidden summary::-webkit-details-marker { display:none; }
+.seasonal-hidden div { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:2px 8px; padding-top:5px; font-size:10px; line-height:1.35; }
