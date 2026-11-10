@@ -528,6 +528,8 @@ body.manual-keyboard-open .quick-entry-bar { position: sticky; top: calc(env(saf
 .review-row input, .review-row span, .review-row small { -webkit-user-select:none; user-select:none; }
 input[type="search"] { -webkit-appearance:none; appearance:none; }
 
-/* Sélecteur de saisonnalité : discret, cohérent avec le filtre de magasin. */
-.month-filter { display:flex; align-items:center; justify-content:flex-end; gap:9px; margin:0 0 7px; color:var(--muted); font-size:12px; font-weight:650; }
-.month-filter select { width:auto; max-width:min(70vw,280px); padding:8px 30px 8px 11px; border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--ink); font:inherit; font-weight:600; }
+/* Rangée compacte de mois : chaque choix reste visible même sur petit écran. */
+.month-pills { display:flex; width:100%; min-width:0; gap:4px; margin:0 0 9px; }
+.month-pill { flex:1 1 0; min-width:0; min-height:34px; padding:4px 1px; border:1px solid var(--violet); border-radius:999px; background:#fff; color:var(--violet); font:inherit; font-size:13px; line-height:1; font-weight:700; cursor:pointer; }
+.month-pill.selected { background:var(--violet); color:#fff; }
+.month-pill:focus-visible { outline:3px solid color-mix(in srgb,var(--violet) 50%,white); outline-offset:2px; }
