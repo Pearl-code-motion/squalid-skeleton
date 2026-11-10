@@ -533,3 +533,10 @@ input[type="search"] { -webkit-appearance:none; appearance:none; }
 .month-pill { flex:1 1 0; min-width:0; min-height:34px; padding:4px 1px; border:1px solid var(--violet); border-radius:999px; background:#fff; color:var(--violet); font:inherit; font-size:13px; line-height:1; font-weight:700; cursor:pointer; }
 .month-pill.selected { background:var(--violet); color:#fff; }
 .month-pill:focus-visible { outline:3px solid color-mix(in srgb,var(--violet) 50%,white); outline-offset:2px; }
+
+.hidden-ingredients { width: max-content; max-width: 100%; margin: -8px 0 14px auto; color: var(--muted); font-size: 12px; }
+.hidden-ingredients summary { display: flex; align-items: center; gap: 5px; cursor: pointer; list-style: none; }
+.hidden-ingredients summary::-webkit-details-marker { display: none; }
+.hidden-ingredients summary span { transition: transform .15s ease; }
+.hidden-ingredients[open] summary span { transform: rotate(180deg); }
+.hidden-ingredients-list { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; padding: 5px 4px 0; line-height: 1.4; }
