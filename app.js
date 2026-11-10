@@ -23,7 +23,7 @@
   let selectedSeasonMonth = null;
   const CSV_COLUMNS = ['recette','moment','ingredient','quantite','unite','categorie','ordre'];
   const SERVINGS_COLUMN = 'repas';
-  const APP_VERSION = 41;
+  const APP_VERSION = 42;
   const MARGIN = 80;
   let recipeGroupOpen = {};
   let quickIngredients = [];
@@ -60,22 +60,30 @@
   const activeSeasonMonth = () => selectedSeasonMonth ?? new Date().getMonth();
   const ingredientIsInSeason = (name, month=activeSeasonMonth()) => {const item=catalogIngredient(name);return !item||!item.months.length||item.months.some(m=>norm(m)===CATALOG_MONTHS[month]);};
   function orderedStoreCategories(categories,store,orders={}){const wanted=STORE_FILTERS[store]||STORE_FILTERS['Auchan St Cyprien'],matches=wanted.map(label=>categories.find(c=>norm(c.name)===norm(label))||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label))).filter((c,i,a)=>c&&a.findIndex(x=>x.id===c.id)===i),saved=(orders[store]||[]).map(id=>matches.find(c=>c.id===id)).filter(Boolean),ordered=[...saved,...matches.filter(c=>!saved.some(x=>x.id===c.id))];const spice=ordered.findIndex(c=>norm(c.name)==='epices'),dry=ordered.findIndex(c=>norm(c.name)==='produits secs');if(spice>=0&&dry>=0){const item=ordered.splice(spice,1)[0],newDry=ordered.findIndex(c=>norm(c.name)==='produits secs');ordered.splice(newDry+(store==='Auchan St Cyprien'?0:1),0,item);}const uncategorized=ordered.findIndex(c=>norm(c.name)==='sans categories');if(uncategorized>=0)ordered.push(ordered.splice(uncategorized,1)[0]);return ordered;}
-  function applyIngredientCatalog(categories){const byName=new Map(categories.map(c=>[norm(c.name),c]));let legacyFruit=byName.get('fruits et legumes');if(legacyFruit&&!byName.has('legumes')){legacyFruit.name='Légumes';byName.set('legumes',legacyFruit);byName.delete('fruits et legumes');}const catalogCategoryKeys=new Set(INGREDIENT_CATALOG.flatMap(x=>x.categories).map(norm));categories.forEach(c=>{if(catalogCategoryKeys.has(norm(c.name)))c.ingredients=[];});for(const item of INGREDIENT_CATALOG){for(const label of item.categories){let cat=byName.get(norm(label))||(!['fruits','legumes'].includes(norm(label))?categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label)):null);if(!cat){cat={id:`catalog-${norm(label).replace(/[^a-z0-9]+/g,'-')}`,name:label,order:categories.length,ingredients:[]};while(categories.some(x=>x.id===cat.id))cat.id+=`-${categories.length}`;categories.push(cat);byName.set(norm(label),cat);}if(!cat.ingredients.some(x=>normalizeIngredient(x)===normalizeIngredient(item.name)))cat.ingredients.push(item.name);}}return categories;}
+  function applyIngredientCatalog(categories){
+    const byName=new Map(categories.map(c=>[norm(c.name),c]));
+    for(const item of INGREDIENT_CATALOG)for(const label of item.categories){
+      let cat=byName.get(norm(label));
+      if(!cat){cat={id:`catalog-${norm(label).replace(/[^a-z0-9]+/g,'-')}`,name:label,order:categories.length,ingredients:[]};while(categories.some(x=>x.id===cat.id))cat.id+=`-${categories.length}`;categories.push(cat);byName.set(norm(label),cat);}
+      if(!cat.ingredients.some(x=>normalizeIngredient(x)===normalizeIngredient(item.name)))cat.ingredients.push(item.name);
+    }
+    return categories;
+  }
   function seasonalIngredientsForCategories(categories,month=activeSeasonMonth()){return categories.flatMap(c=>c.ingredients.filter(n=>ingredientIsInSeason(n,month)).map(n=>({category:c,name:n})));}
   function ensureCatalogCategories(categories){
     for(const label of new Set(INGREDIENT_CATALOG.flatMap(item=>item.categories))){
-      let cat=categories.find(c=>norm(c.name)===norm(label))||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label));
+      let cat=categories.find(c=>norm(c.name)===norm(label));
       if(!cat){cat={id:`catalog-${norm(label).replace(/[^a-z0-9]+/g,'-')}`,name:label,order:categories.length,ingredients:[]};while(categories.some(x=>x.id===cat.id))cat.id+=`-${categories.length}`;categories.push(cat);}
     }
     return categories;
   }
-  function enrichItemCatalogCategories(item,categories){
-    const entry=catalogIngredient(item?.name);if(!entry)return false;
-    const ids=[...new Set([...splitCategories(item.categories),...splitCategories(item.category)])], resolved=entry.categories.map(label=>categories.find(c=>norm(c.name)===norm(label))?.id||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label))?.id).filter(Boolean);
-    const merged=[...new Set([...ids,...resolved])],changed=merged.length!==itemCategoryIds(item).length||!Array.isArray(item.categories)||ids.length!==itemCategoryIds(item).length;
-    if(changed)item.categories=merged;
-    if(!item.category&&merged.length)item.category=merged[0];
-    return changed;
+  function mergeIngredientCatalogAdditive(categories,suppressed={}){
+    ensureCatalogCategories(categories);
+    for(const entry of INGREDIENT_CATALOG)for(const label of entry.categories){
+      const cat=categories.find(c=>norm(c.name)===norm(label));
+      if(cat&&!isIngredientSuppressed(suppressed,cat.name,entry.name)&&!cat.ingredients.some(name=>normalizeIngredient(name)===normalizeIngredient(entry.name)))cat.ingredients.push(entry.name);
+    }
+    return categories;
   }
   function resolvedStoreCategory(item,categories,store){
     const available=itemCategoryIds(item),wanted=STORE_FILTERS[store]||[];
@@ -85,11 +93,7 @@
   function syncCatalogMembership(){
     const categoryCount=state.categories.length;
     state.categories=ensureCatalogCategories(state.categories);
-    const categoriesChanged=state.categories.length!==categoryCount;
-    let recipesChanged=false,listChanged=false;
-    state.recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))recipesChanged=true;}));
-    state.list.forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))listChanged=true;});
-    if(db){if(recipesChanged)replaceStore('recipes',state.recipes).catch(()=>{});if(listChanged)replaceStore('list',state.list).catch(()=>{});if(categoriesChanged)replaceStore('categories',state.categories).catch(()=>{});}
+    if(db&&state.categories.length!==categoryCount)replaceStore('categories',state.categories).catch(()=>{});
   }
 
   const splitCategories = value => [...new Set((Array.isArray(value)?value:String(value??'').split('|')).map(x=>String(x??'').trim()).filter(Boolean))];
@@ -199,7 +203,7 @@
   function displayQty(item){let q=qtyNum(item.quantity);if(q===null)return '';let u=item.unit;if(u==='u')q=Math.ceil(q-1e-10);if(u==='g'&&q>=1000){q/=1000;u='kg';}else if(u==='ml'&&q>=1000){q/=1000;u='l';}return `${fmt(q)}${u?` ${u}`:''}`;}
 
   if(typeof document==='undefined'){
-    if(typeof module!=='undefined')module.exports={DEFAULT_CATEGORIES,STORE_FILTERS,INGREDIENT_CATALOG,ensureCatalogCategories,enrichItemCatalogCategories,resolvedStoreCategory,INGREDIENT_PLURAL_EXCEPTIONS,normalizeIngredient,monthPillsMarkup,storeCategoryKey,orderedStoreCategories,applyIngredientCatalog,ingredientIsInSeason,seasonalIngredientsForCategories,splitCategories,itemCategoryIds,preferredStoreCategory,CSV_COLUMNS,parseCSV,validateCSV,canonicalMoment,recipeSignature,reconcileRecipes,mergeListItem,displayQty,norm,qtyNum,recipeServings,mealTotals,finalizeShoppingList,adjustQuantity,countSelections,planKey,countSelectedPeople,mergeGeneratedWeekBatches,scaleRecipeIngredients,shoppingEntries,recipePickerMarkup,ingredientKey,isIngredientSuppressed,hasUppercaseLetter,isCatalogIngredientValid};
+    if(typeof module!=='undefined')module.exports={DEFAULT_CATEGORIES,STORE_FILTERS,INGREDIENT_CATALOG,ensureCatalogCategories,mergeIngredientCatalogAdditive,resolvedStoreCategory,INGREDIENT_PLURAL_EXCEPTIONS,normalizeIngredient,monthPillsMarkup,storeCategoryKey,orderedStoreCategories,applyIngredientCatalog,ingredientIsInSeason,seasonalIngredientsForCategories,splitCategories,itemCategoryIds,preferredStoreCategory,CSV_COLUMNS,parseCSV,validateCSV,canonicalMoment,recipeSignature,reconcileRecipes,mergeListItem,displayQty,norm,qtyNum,recipeServings,mealTotals,finalizeShoppingList,adjustQuantity,countSelections,planKey,countSelectedPeople,mergeGeneratedWeekBatches,scaleRecipeIngredients,shoppingEntries,recipePickerMarkup,ingredientKey,isIngredientSuppressed,hasUppercaseLetter,isCatalogIngredientValid};
     return;
   }
   const view=$('#view'), toast=$('#toast'); let db, state={recipes:[],categories:[],pdfs:[],list:[]}, tab='list', modalOpen=false, workflow=null, monthCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1), days=new Map(), selectedCounts={}, plannedMeals={}, peopleBySlot={}, reviewEntries=[], reviewChecks={}, recipeChecked={};
@@ -231,49 +235,10 @@
     if(!state.categories.length)state.categories=DEFAULT_CATEGORIES.map((name,order)=>({id:uid(),name,order,ingredients:[]}));
     for(const name of ['Sauce','Autres','Autres produits'])if(!state.categories.some(c=>norm(c.name)===norm(name)))state.categories.push({id:uid(),name,order:state.categories.length,ingredients:[]});
     state.categories.sort((a,b)=>a.order-b.order);
-    let recipesMigrated=false,listMigrated=false;
-    const categoryByName=name=>state.categories.find(c=>norm(c.name)===norm(name));
-    const legacyOther=categoryByName('Autres'),pharmacyOther=categoryByName('Autres produits');
-    // L’ancien « Autres » était partagé : copier son catalogue sans le renommer ni le vider.
-    if(legacyOther&&pharmacyOther&&!pharmacyOther.legacyOtherCopied){
-      legacyOther.ingredients.forEach(name=>{if(!pharmacyOther.ingredients.some(x=>norm(x)===norm(name)))pharmacyOther.ingredients.push(name);});
-      pharmacyOther.legacyOtherCopied=true;
-    }
-    const migratePharmacyMembership=(item,storeType)=>{
-      const ids=itemCategoryIds(item),hasLegacyOther=ids.some(id=>id===legacyOther?.id||norm(state.categories.find(c=>c.id===id)?.name||id)==='autres');
-      // Dupliquer l’association vers la nouvelle catégorie, sans retirer « Autres » (Épicerie asiatique).
-      if(hasLegacyOther&&pharmacyOther&&!ids.includes(pharmacyOther.id)){
-        ids.push(pharmacyOther.id);item.categories=ids;
-        if(storeType==='recipes')recipesMigrated=true;else listMigrated=true;
-      }
-    };
-    const sauceCategory=categoryByName('Sauce'),rayonCategory=state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey('Rayon asiatique'));
-    state.recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{
-      const ids=splitCategories(i.categories?.length?i.categories:i.category);
-      if(!Array.isArray(i.categories)||!Array.isArray(i.category)){i.categories=ids;i.category=ids[0]||'';recipesMigrated=true;}
-      migratePharmacyMembership(i,'recipes');
-      if(norm(i.name)==='sauce soja salee')for(const cat of [rayonCategory,sauceCategory].filter(Boolean)){
-        if(!i.categories.includes(cat.id)){i.categories.push(cat.id);recipesMigrated=true;}
-        if(!isIngredientSuppressed(suppressedIngredients,cat.name,i.name)&&!cat.ingredients.some(x=>normalizeIngredient(x)===normalizeIngredient(i.name)))cat.ingredients.push(i.name);
-      }
-    }));
-    state.list.forEach(i=>{
-      if(!Array.isArray(i.categories)){i.categories=splitCategories(i.category);listMigrated=true;}
-      migratePharmacyMembership(i,'list');
-    });
-    let catalogVersion=0;try{catalogVersion=Number(localStorage.getItem('courses-ingredient-catalog-version')||0);}catch{}
-    if(catalogVersion<2){
-      state.categories=ensureCatalogCategories(state.categories);
-      for(const entry of INGREDIENT_CATALOG)for(const label of entry.categories){
-        const cat=state.categories.find(c=>norm(c.name)===norm(label))||state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label));
-        if(cat&&!isIngredientSuppressed(suppressedIngredients,cat.name,entry.name)&&!cat.ingredients.some(name=>normalizeIngredient(name)===normalizeIngredient(entry.name)))cat.ingredients.push(entry.name);
-      }
-      try{localStorage.setItem('courses-ingredient-catalog-version','2');}catch{}
-    }
-    state.categories=ensureCatalogCategories(state.categories);
-    state.recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))recipesMigrated=true;}));
-    state.list.forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))listMigrated=true;});
-    await Promise.all([replaceStore('categories',state.categories),recipesMigrated?replaceStore('recipes',state.recipes):Promise.resolve(),listMigrated?replaceStore('list',state.list):Promise.resolve()]);
+    // Fusion additive : compléter chaque catégorie avec le catalogue, sans vider
+    // les ajouts manuels. « Autres » et « Autres produits » restent indépendants.
+    state.categories=mergeIngredientCatalogAdditive(state.categories,suppressedIngredients);
+    await replaceStore('categories',state.categories);
   }
   function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),3000);}
   function ingredientFieldKind(input){const form=input?.form;return form?.dataset.form==='catalog'?'catalog':form?.dataset.form==='list-add'||form?.dataset.form==='manual-add'?'lowercase':null;}
@@ -387,7 +352,7 @@
     // Un import CSV valide réinitialise les suppressions manuelles du catalogue.
     suppressedIngredients={};saveSuppressedIngredients();
     // Catalogue alimenté uniquement après validation complète, puis comparaison par contenu cohérent.
-    result.recipes.forEach(r=>r.ingredients.forEach(i=>{const match=catalogIngredient(i.name);if(match)i.name=match.name;let labels=match?match.categories:splitCategories(i.category);if(!match)labels=['Sans catégories'];if(norm(i.name)==='sauce soja salee')labels=[...new Set([...labels,'Sauce'])];const ids=[];for(const label of labels){let cat=state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label));if(!cat){cat={id:uid(),name:label,order:state.categories.length,ingredients:[]};state.categories.push(cat);}if(!isIngredientSuppressed(suppressedIngredients,cat.name,i.name)&&!cat.ingredients.some(x=>normalizeIngredient(x)===normalizeIngredient(i.name)))cat.ingredients.push(i.name);ids.push(cat.id);}i.categories=[...new Set(ids)];i.category=i.categories[0]||'';}));
+    result.recipes.forEach(r=>r.ingredients.forEach(i=>{const match=catalogIngredient(i.name);if(match)i.name=match.name;let labels=match?match.categories:splitCategories(i.category);if(norm(i.name)==='sauce soja salee')labels=[...new Set([...labels,'Sauce'])];const ids=[];for(const label of labels){let cat=state.categories.find(c=>norm(c.name)===norm(label));if(!cat){cat={id:uid(),name:label,order:state.categories.length,ingredients:[]};state.categories.push(cat);}if(!isIngredientSuppressed(suppressedIngredients,cat.name,i.name)&&!cat.ingredients.some(x=>normalizeIngredient(x)===normalizeIngredient(i.name)))cat.ingredients.push(i.name);ids.push(cat.id);}i.categories=[...new Set(ids)];i.category=i.categories[0]||'';}));
     const reconciled=reconcileRecipes(next,result.recipes);added=reconciled.added;updated=reconciled.updated;unchanged=reconciled.unchanged;next.splice(0,next.length,...reconciled.recipes);
     state.recipes=next;await Promise.all([replaceStore('recipes',state.recipes),replaceStore('categories',state.categories)]);renderImport();say(`${added} ajoutée(s), ${updated} mise(s) à jour, ${unchanged} inchangée(s).`);}
   function selectedNewList(entries,mode='append'){if(mode==='replace')state.list=[];entries.forEach(x=>mergeListItem(state.list,x,1));finalizeShoppingList(state.list);replaceStore('list',state.list).then(()=>{setTab('list');say(mode==='replace'?'Liste remplacée.':'Articles ajoutés à la liste.');});}
