@@ -23,7 +23,7 @@
   let selectedSeasonMonth = null;
   const CSV_COLUMNS = ['recette','moment','ingredient','quantite','unite','categorie','ordre'];
   const SERVINGS_COLUMN = 'repas';
-  const APP_VERSION = 39;
+  const APP_VERSION = 40;
   const MARGIN = 80;
   let recipeGroupOpen = {};
   let quickIngredients = [];
@@ -62,11 +62,42 @@
   function orderedStoreCategories(categories,store,orders={}){const wanted=STORE_FILTERS[store]||STORE_FILTERS['Auchan St Cyprien'],matches=wanted.map(label=>categories.find(c=>norm(c.name)===norm(label))||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label))).filter((c,i,a)=>c&&a.findIndex(x=>x.id===c.id)===i),saved=(orders[store]||[]).map(id=>matches.find(c=>c.id===id)).filter(Boolean),ordered=[...saved,...matches.filter(c=>!saved.some(x=>x.id===c.id))];const spice=ordered.findIndex(c=>norm(c.name)==='epices'),dry=ordered.findIndex(c=>norm(c.name)==='produits secs');if(spice>=0&&dry>=0){const item=ordered.splice(spice,1)[0],newDry=ordered.findIndex(c=>norm(c.name)==='produits secs');ordered.splice(newDry+(store==='Auchan St Cyprien'?0:1),0,item);}const uncategorized=ordered.findIndex(c=>norm(c.name)==='sans categories');if(uncategorized>=0)ordered.push(ordered.splice(uncategorized,1)[0]);return ordered;}
   function applyIngredientCatalog(categories){const byName=new Map(categories.map(c=>[norm(c.name),c]));let legacyFruit=byName.get('fruits et legumes');if(legacyFruit&&!byName.has('legumes')){legacyFruit.name='Légumes';byName.set('legumes',legacyFruit);byName.delete('fruits et legumes');}const catalogCategoryKeys=new Set(INGREDIENT_CATALOG.flatMap(x=>x.categories).map(norm));categories.forEach(c=>{if(catalogCategoryKeys.has(norm(c.name)))c.ingredients=[];});for(const item of INGREDIENT_CATALOG){for(const label of item.categories){let cat=byName.get(norm(label))||(!['fruits','legumes'].includes(norm(label))?categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label)):null);if(!cat){cat={id:`catalog-${norm(label).replace(/[^a-z0-9]+/g,'-')}`,name:label,order:categories.length,ingredients:[]};while(categories.some(x=>x.id===cat.id))cat.id+=`-${categories.length}`;categories.push(cat);byName.set(norm(label),cat);}if(!cat.ingredients.some(x=>normalizeIngredient(x)===normalizeIngredient(item.name)))cat.ingredients.push(item.name);}}return categories;}
   function seasonalIngredientsForCategories(categories,month=activeSeasonMonth()){return categories.flatMap(c=>c.ingredients.filter(n=>ingredientIsInSeason(n,month)).map(n=>({category:c,name:n})));}
+  function ensureCatalogCategories(categories){
+    for(const label of new Set(INGREDIENT_CATALOG.flatMap(item=>item.categories))){
+      let cat=categories.find(c=>norm(c.name)===norm(label))||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label));
+      if(!cat){cat={id:`catalog-${norm(label).replace(/[^a-z0-9]+/g,'-')}`,name:label,order:categories.length,ingredients:[]};while(categories.some(x=>x.id===cat.id))cat.id+=`-${categories.length}`;categories.push(cat);}
+    }
+    return categories;
+  }
+  function enrichItemCatalogCategories(item,categories){
+    const entry=catalogIngredient(item?.name);if(!entry)return false;
+    const ids=[...new Set([...splitCategories(item.categories),...splitCategories(item.category)])], resolved=entry.categories.map(label=>categories.find(c=>norm(c.name)===norm(label))?.id||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(label))?.id).filter(Boolean);
+    const merged=[...new Set([...ids,...resolved])],changed=merged.length!==itemCategoryIds(item).length||!Array.isArray(item.categories)||ids.length!==itemCategoryIds(item).length;
+    if(changed)item.categories=merged;
+    if(!item.category&&merged.length)item.category=merged[0];
+    return changed;
+  }
+  function resolvedStoreCategory(item,categories,store){
+    const available=itemCategoryIds(item),wanted=STORE_FILTERS[store]||[];
+    for(const label of wanted){const hit=available.find(id=>{const cat=categories.find(c=>c.id===id)||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(id));return cat&&storeCategoryKey(cat.name)===storeCategoryKey(label);});if(hit)return (categories.find(c=>c.id===hit)||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(hit)))?.id||hit;}
+    const fallbackLabels=['Autres','Autres produits','Sans catégories'];
+    for(const label of fallbackLabels){if(!wanted.some(w=>storeCategoryKey(w)===storeCategoryKey(label)))continue;const fallback=categories.find(c=>norm(c.name)===norm(label));if(fallback)return fallback.id;}
+    return '';
+  }
+  function syncCatalogMembership(){
+    const categoryCount=state.categories.length;
+    state.categories=ensureCatalogCategories(state.categories);
+    const categoriesChanged=state.categories.length!==categoryCount;
+    let recipesChanged=false,listChanged=false;
+    state.recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))recipesChanged=true;}));
+    state.list.forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))listChanged=true;});
+    if(db){if(recipesChanged)replaceStore('recipes',state.recipes).catch(()=>{});if(listChanged)replaceStore('list',state.list).catch(()=>{});if(categoriesChanged)replaceStore('categories',state.categories).catch(()=>{});}
+  }
 
   const splitCategories = value => [...new Set((Array.isArray(value)?value:String(value??'').split('|')).map(x=>String(x??'').trim()).filter(Boolean))];
   const itemCategoryIds = item => splitCategories(item?.categories?.length?item.categories:item?.category);
   function preferredStoreCategory(ids,categories,store=activeStore){const available=splitCategories(ids);const wanted=STORE_FILTERS[store]||[];for(const label of wanted){const hit=available.find(id=>{const cat=categories.find(c=>c.id===id)||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(id));return cat&&storeCategoryKey(cat.name)===storeCategoryKey(label);});if(hit)return (categories.find(c=>c.id===hit)||categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(hit)))?.id||hit;}const fallback=categories.find(c=>norm(c.name)==='sans categories');return fallback?.id||available[0]||'';}
-  function resolvedItemCategory(item,store=activeStore){const available=itemCategoryIds(item),wanted=STORE_FILTERS[store]||[];for(const label of wanted){const hit=available.find(id=>{const cat=state.categories.find(c=>c.id===id)||state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(id));return cat&&storeCategoryKey(cat.name)===storeCategoryKey(label);});if(hit)return (state.categories.find(c=>c.id===hit)||state.categories.find(c=>storeCategoryKey(c.name)===storeCategoryKey(hit)))?.id||hit;}const fallback=state.categories.find(c=>norm(c.name)==='sans categories');return fallback?.id||'';}
+  function resolvedItemCategory(item,store=activeStore){return resolvedStoreCategory(item,state.categories,store);}
   const uid = () => (globalThis.crypto?.randomUUID?.() || `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
   const qtyNum = value => { const s=String(value ?? '').trim().replace(',','.'); return s && Number.isFinite(Number(s)) ? Number(s) : null; };
   const fmt = n => Number(n.toFixed(2)).toLocaleString('fr-FR',{maximumFractionDigits:2});
@@ -169,7 +200,7 @@
   function displayQty(item){let q=qtyNum(item.quantity);if(q===null)return '';let u=item.unit;if(u==='u')q=Math.ceil(q-1e-10);if(u==='g'&&q>=1000){q/=1000;u='kg';}else if(u==='ml'&&q>=1000){q/=1000;u='l';}return `${fmt(q)}${u?` ${u}`:''}`;}
 
   if(typeof document==='undefined'){
-    if(typeof module!=='undefined')module.exports={DEFAULT_CATEGORIES,STORE_FILTERS,INGREDIENT_CATALOG,INGREDIENT_PLURAL_EXCEPTIONS,normalizeIngredient,monthPillsMarkup,storeCategoryKey,orderedStoreCategories,applyIngredientCatalog,ingredientIsInSeason,seasonalIngredientsForCategories,splitCategories,itemCategoryIds,preferredStoreCategory,CSV_COLUMNS,parseCSV,validateCSV,canonicalMoment,recipeSignature,reconcileRecipes,mergeListItem,displayQty,norm,qtyNum,recipeServings,mealTotals,finalizeShoppingList,adjustQuantity,countSelections,planKey,countSelectedPeople,mergeGeneratedWeekBatches,scaleRecipeIngredients,shoppingEntries,recipePickerMarkup,ingredientKey,isIngredientSuppressed,hasUppercaseLetter,isCatalogIngredientValid};
+    if(typeof module!=='undefined')module.exports={DEFAULT_CATEGORIES,STORE_FILTERS,INGREDIENT_CATALOG,ensureCatalogCategories,enrichItemCatalogCategories,resolvedStoreCategory,INGREDIENT_PLURAL_EXCEPTIONS,normalizeIngredient,monthPillsMarkup,storeCategoryKey,orderedStoreCategories,applyIngredientCatalog,ingredientIsInSeason,seasonalIngredientsForCategories,splitCategories,itemCategoryIds,preferredStoreCategory,CSV_COLUMNS,parseCSV,validateCSV,canonicalMoment,recipeSignature,reconcileRecipes,mergeListItem,displayQty,norm,qtyNum,recipeServings,mealTotals,finalizeShoppingList,adjustQuantity,countSelections,planKey,countSelectedPeople,mergeGeneratedWeekBatches,scaleRecipeIngredients,shoppingEntries,recipePickerMarkup,ingredientKey,isIngredientSuppressed,hasUppercaseLetter,isCatalogIngredientValid};
     return;
   }
   const view=$('#view'), toast=$('#toast'); let db, state={recipes:[],categories:[],pdfs:[],list:[]}, tab='list', modalOpen=false, workflow=null, monthCursor=new Date(new Date().getFullYear(),new Date().getMonth(),1), days=new Map(), selectedCounts={}, plannedMeals={}, peopleBySlot={}, reviewEntries=[], reviewChecks={}, recipeChecked={};
@@ -239,6 +270,9 @@
       state.list.forEach(i=>{if(attachCatalogCategories(i))listMigrated=true;});
       try{localStorage.setItem('courses-ingredient-catalog-version','1');}catch{}
     }
+    state.categories=ensureCatalogCategories(state.categories);
+    state.recipes.forEach(r=>(r.ingredients||[]).forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))recipesMigrated=true;}));
+    state.list.forEach(i=>{if(enrichItemCatalogCategories(i,state.categories))listMigrated=true;});
     await Promise.all([replaceStore('categories',state.categories),recipesMigrated?replaceStore('recipes',state.recipes):Promise.resolve(),listMigrated?replaceStore('list',state.list):Promise.resolve()]);
   }
   function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),3000);}
@@ -257,6 +291,7 @@
   function renderPdfs(){const sortedPdfs=[...state.pdfs].sort((a,b)=>pdfDisplayName(a.name).localeCompare(pdfDisplayName(b.name),'fr',{sensitivity:'base'}));page('Fiches','DOCUMENTS · STOCKAGE LOCAL',`<section class="group"><label class="file-pick">Importer un ou plusieurs PDF<input id="pdf-file" type="file" accept="application/pdf,.pdf" multiple></label><p class="hint">Les fichiers sont stockés localement dans IndexedDB.</p></section><section class="pdf-list">${sortedPdfs.length?sortedPdfs.map(f=>`<article class="pdf-card" data-pdf-row="${esc(f.id)}" data-action="open-pdf" data-id="${esc(f.id)}" role="button" tabindex="0" aria-label="Ouvrir ${esc(pdfDisplayName(f.name))}"><span class="pdf-name">${esc(pdfDisplayName(f.name))}</span><button class="pdf-icon-button" data-action="rename-pdf" data-id="${esc(f.id)}" aria-label="Renommer ${esc(pdfDisplayName(f.name))}" title="Renommer">✎</button><button class="pdf-icon-button pdf-cross" data-action="delete-pdf" data-id="${esc(f.id)}" aria-label="Supprimer ${esc(pdfDisplayName(f.name))}" title="Supprimer">✕</button></article>`).join(''):'<section class="group empty-state"><b>Aucune fiche PDF</b><p>Importez vos documents pour les retrouver ici.</p></section>'}</section>`);}
   function groupedList(){const map=new Map();state.list.forEach(x=>{const k=normalizeIngredient(x.name);if(!map.has(k))map.set(k,[]);map.get(k).push(x);});return map;}
   function renderList(scrollPosition=null){
+    syncCatalogMembership();
     let body=''; const visible=storeCategories();
     const renderRows=(id,items,title)=>{if(!items.length)return '';return `<section class="list-group active-list-category" data-list-category="${esc(id)}"><h2 class="list-group-title">${esc(title||(state.categories.find(c=>c.id===id)?storeCategoryLabel(state.categories.find(c=>c.id===id)):categoryName(id)))}</h2>${items.map(i=>`<div class="shopping-row ${i.checked?'checked':''}" data-list-item="${esc(i.id)}" data-category="${esc(id)}"><input type="checkbox" data-action="toggle" data-id="${esc(i.id)}" ${i.checked?'checked':''} aria-label="Cocher ${esc(i.name)}"><span>${esc(i.name)}</span><small>${esc(displayQty(i))}</small></div>`).join('')}</section>`;};
     let visibleItemCount=0;
@@ -277,7 +312,7 @@
     page('Choisir les jours','',`<section class="group"><div class="calendar-skip-wrap"><button type="button" class="calendar-skip" data-action="skip-calendar">passer cette étape</button></div><div class="calendar-head"><button data-action="month" data-delta="-1">‹</button><b>${monthCursor.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</b><button data-action="month" data-delta="1">›</button></div><div class="calendar-grid">${['L','M','M','J','V','S','D'].map(x=>`<span>${x}</span>`).join('')}${cells}</div><div id="day-options">${orderedDays().map(([date,opt])=>`<div class="day-options"><b>${new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</b>${['midi','soir'].map(meal=>`<div class="meal-option"><label><input type="checkbox" data-meal="${meal}" data-date="${date}" ${opt[meal]?'checked':''}> ${meal==='midi'?'Midi':'Soir'}</label>${opt[meal]?`<div class="person-counter"><span>Personnes</span><button data-action="people" data-date="${date}" data-meal="${meal}" data-delta="-1" aria-label="Diminuer">−</button><b>${slotPeople(date,meal)}</b><button data-action="people" data-date="${date}" data-meal="${meal}" data-delta="1" aria-label="Augmenter">＋</button></div>`:''}</div>`).join('')}<button data-action="un-day" data-date="${date}">Retirer</button></div>`).join('')}</div></section><div class="form-actions workflow-actions"><button type="button" class="button primary" data-action="calendar-next" ${[...days.values()].some(opt=>!opt.midi&&!opt.soir)?'disabled':''}>Continuer</button></div>`);}
   function mealsCounts(){let midi=0,soir=0;days.forEach((d,date)=>{if(d.midi)midi+=slotPeople(date,'midi');if(d.soir)soir+=slotPeople(date,'soir');});return {days:days.size,midi,soir};}
   function topScrollPosition(){return {left:0,top:0,rootLeft:0,rootTop:0,containers:[{index:0,left:0,top:0}]};}
-  function renderRecipePicker(scrollPosition=null){document.querySelectorAll('[data-recipe-group]').forEach(el=>{recipeGroupOpen[el.dataset.recipeGroup]=el.open;});page('Choisir les recettes',workflow?.passed?'SÉLECTIONNER LES REPAS':'PAR JOURS DE LA SEMAINE · 2/2',`${recipePickerMarkup(state.recipes,days,peopleBySlot,plannedMeals,selectedCounts,!!workflow?.passed)}<div class="form-actions workflow-actions">${button('recipe-ok','OK - Générer les courses','primary')}</div>`,scrollPosition);}
+  function renderRecipePicker(scrollPosition=null){syncCatalogMembership();document.querySelectorAll('[data-recipe-group]').forEach(el=>{recipeGroupOpen[el.dataset.recipeGroup]=el.open;});page('Choisir les recettes',workflow?.passed?'SÉLECTIONNER LES REPAS':'PAR JOURS DE LA SEMAINE · 2/2',`${recipePickerMarkup(state.recipes,days,peopleBySlot,plannedMeals,selectedCounts,!!workflow?.passed)}<div class="form-actions workflow-actions">${button('recipe-ok','OK - Générer les courses','primary')}</div>`,scrollPosition);}
   let generatedWeeks=[];
   try{const saved=JSON.parse(localStorage.getItem('courses-generated-weeks-v1')||'[]');if(Array.isArray(saved))generatedWeeks=saved;}catch{}
   function saveGeneratedWeeks(){try{localStorage.setItem('courses-generated-weeks-v1',JSON.stringify(generatedWeeks));}catch{say('Impossible d’enregistrer l’historique sur cet appareil.');}}
@@ -290,6 +325,7 @@
     return {id:uid(),groups};
   }
   function renderRecipesTab(scrollPosition=null){
+    syncCatalogMembership();
     const hasRows=generatedWeeks.some(w=>Object.values(w.groups||{}).some(rows=>rows.length));
     if(!hasRows){page('Recettes','VOTRE HISTORIQUE','<section class="recipes-empty-card"><p>Les recettes sélectionnées pour vos courses apparaîtront ici.</p></section>',scrollPosition);return;}
     const momentTitles=[['matin','Matin'],['midi','Midi'],['gouter','Goûter'],['soir','Soir']];
